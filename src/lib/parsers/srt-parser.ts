@@ -9,12 +9,13 @@ export class SRTParser {
   static async parseSRTFile(filePath: string): Promise<VideoSubtitle> {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
-      const videoId = this.extractVideoIdFromFilename(filePath);
+      const { videoId, episodeNumber } = this.extractFromFilename(filePath);
       const blocks = this.parseSRTContent(content);
-      const entries = this.convertBlocksToEntries(blocks, videoId);
+      const entries = this.convertBlocksToEntries(blocks, videoId, episodeNumber);
 
       return {
         videoId,
+        episodeNumber,
         entries,
       };
     } catch (error) {
@@ -60,10 +61,13 @@ export class SRTParser {
   /**
    * 从文件名提取视频 ID
    */
-  private static extractVideoIdFromFilename(filePath: string): string {
+  private static extractFromFilename(filePath: string): { videoId: string; episodeNumber: number } {
     const filename = path.basename(filePath, '.srt');
-    // 假设文件名就是视频 ID，如 BV1JG4y1g76F.srt
-    return filename;
+    // 支持 BVxxxxx_2.srt（带集数），或 BVxxxxx.srt（默认第1集）
+    const m = filename.match(/^(.*?)(?:_(\d+))?$/);
+    const videoId = m?.[1] || filename;
+    const episodeNumber = m?.[2] ? parseInt(m[2], 10) : 1;
+    return { videoId, episodeNumber };
   }
 
   /**
@@ -138,15 +142,16 @@ export class SRTParser {
   /**
    * 将 SRT 块转换为 SubtitleEntry
    */
-  private static convertBlocksToEntries(blocks: SRTBlock[], videoId: string): SubtitleEntry[] {
+  private static convertBlocksToEntries(blocks: SRTBlock[], videoId: string, episodeNumber: number): SubtitleEntry[] {
     return blocks.map(block => {
       const startTime = this.timeStringToMilliseconds(block.startTime);
       const endTime = this.timeStringToMilliseconds(block.endTime);
       const duration = endTime - startTime;
 
       return {
-        id: `${videoId}_${block.sequence}`,
+        id: `${videoId}_${episodeNumber}_${block.sequence}`,
         videoId,
+        episodeNumber,
         sequenceNumber: block.sequence,
         startTime,
         endTime,

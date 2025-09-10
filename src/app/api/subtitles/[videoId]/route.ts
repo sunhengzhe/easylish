@@ -9,6 +9,8 @@ export async function GET(
 ) {
   try {
     const { videoId } = await params;
+    const { searchParams } = new URL(request.url);
+    const p = parseInt(searchParams.get('p') || '1', 10) || 1;
 
     if (!videoId) {
       return NextResponse.json(
@@ -18,7 +20,7 @@ export async function GET(
     }
 
     const searchService = SubtitleSearchService.getInstance();
-    const videoSubtitle = await searchService.getVideoSubtitle(videoId);
+    const videoSubtitle = await searchService.getVideoSubtitle(videoId, p);
 
     if (!videoSubtitle) {
       return NextResponse.json(

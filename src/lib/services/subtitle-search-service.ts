@@ -126,9 +126,9 @@ export class SubtitleSearchService {
   /**
    * 获取视频的所有字幕
    */
-  async getVideoSubtitle(videoId: string): Promise<VideoSubtitle | undefined> {
+  async getVideoSubtitle(videoId: string, episodeNumber = 1): Promise<VideoSubtitle | undefined> {
     await this.ensureInitialized();
-    return this.memoryStore.getVideoSubtitle(videoId);
+    return this.memoryStore.getVideoSubtitle(videoId, episodeNumber);
   }
 
   /**

@@ -4,6 +4,7 @@ import { useState } from "react";
 
 interface VideoData {
   videoId: string;
+  episode?: number;
   startMs: number;
   text?: string;
   score?: number;
@@ -38,6 +39,7 @@ export default function Home() {
         const data = await response.json();
         setVideoData({
           videoId: data.videoId,
+          episode: data.episode || 1,
           startMs: data.startMs,
           text: data.text,
           score: data.score,
@@ -99,7 +101,7 @@ export default function Home() {
           <div className="w-full">
             <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
               <iframe
-                src={`//player.bilibili.com/player.html?bvid=${videoData.videoId}&autoplay=1&t=${Math.floor(videoData.startMs / 1000)}&muted=0&danmaku=0`}
+                src={`//player.bilibili.com/player.html?bvid=${videoData.videoId}&p=${videoData.episode || 1}&autoplay=1&t=${Math.floor(videoData.startMs / 1000)}&muted=0&danmaku=0`}
                 className="absolute top-0 left-0 w-full h-full rounded-lg shadow-lg"
                 scrolling="no"
                 frameBorder="0"
@@ -108,7 +110,7 @@ export default function Home() {
             </div>
             <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div className="text-center text-sm text-gray-600 dark:text-gray-400 mb-2">
-                视频ID: {videoData.videoId} | 开始时间: {Math.floor(videoData.startMs / 1000)}秒
+                视频ID: {videoData.videoId} | 集数: {videoData.episode || 1} | 开始时间: {Math.floor(videoData.startMs / 1000)}秒
               </div>
               {videoData.text && (
                 <div className="text-center">

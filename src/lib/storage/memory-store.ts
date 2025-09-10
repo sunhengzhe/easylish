@@ -9,8 +9,8 @@ export class MemoryStore {
 
   // 主要存储结构
   private subtitleEntries: Map<string, SubtitleEntry> = new Map(); // id -> entry
-  private videoSubtitles: Map<string, VideoSubtitle> = new Map(); // videoId -> subtitle
-  private videoEntries: Map<string, string[]> = new Map(); // videoId -> entryIds[]
+  private videoSubtitles: Map<string, VideoSubtitle> = new Map(); // key: videoId_episode -> subtitle
+  private videoEntries: Map<string, string[]> = new Map(); // key: videoId_episode -> entryIds[]
 
   // 搜索索引
   private textIndex: Map<string, Set<string>> = new Map(); // word -> entryIds
@@ -65,8 +65,9 @@ export class MemoryStore {
    * 添加视频字幕数据
    */
   private async addVideoSubtitle(videoSubtitle: VideoSubtitle): Promise<void> {
-    // 存储视频信息
-    this.videoSubtitles.set(videoSubtitle.videoId, videoSubtitle);
+    // 存储视频信息（包含集数）
+    const compositeId = `${videoSubtitle.videoId}_${videoSubtitle.episodeNumber}`;
+    this.videoSubtitles.set(compositeId, videoSubtitle);
 
     // 存储字幕条目
     const entryIds: string[] = [];
@@ -80,7 +81,7 @@ export class MemoryStore {
       this.indexText(entry.normalizedText, entry.id, true);
     }
 
-    this.videoEntries.set(videoSubtitle.videoId, entryIds);
+    this.videoEntries.set(compositeId, entryIds);
     this.stats.totalVideos++;
     this.stats.totalEntries += videoSubtitle.entries.length;
   }
@@ -254,8 +255,9 @@ export class MemoryStore {
   /**
    * 获取视频的所有字幕
    */
-  getVideoSubtitle(videoId: string): VideoSubtitle | undefined {
-    return this.videoSubtitles.get(videoId);
+  getVideoSubtitle(videoId: string, episodeNumber = 1): VideoSubtitle | undefined {
+    const compositeId = `${videoId}_${episodeNumber}`;
+    return this.videoSubtitles.get(compositeId);
   }
 
   /**

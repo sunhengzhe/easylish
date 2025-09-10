@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({
       videoId: best.entry.videoId,
+      episode: best.entry.episodeNumber,
       startMs: best.entry.startTime,
       text: best.entry.text,
       score: best.score,

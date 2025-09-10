@@ -3,6 +3,7 @@
 export interface SubtitleEntry {
   id: string; // 唯一标识符
   videoId: string; // 视频ID (如: BV1JG4y1g76F)
+  episodeNumber: number; // 集数（无下划线时默认为 1）
   sequenceNumber: number; // 在视频中的序号
   startTime: number; // 开始时间（毫秒）
   endTime: number; // 结束时间（毫秒）
@@ -15,6 +16,7 @@ export interface SubtitleEntry {
 
 export interface VideoSubtitle {
   videoId: string;
+  episodeNumber: number; // 集数（无下划线时默认为 1）
   entries: SubtitleEntry[];
 }
 
