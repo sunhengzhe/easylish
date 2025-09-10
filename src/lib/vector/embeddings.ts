@@ -15,7 +15,17 @@ export class HashEmbeddingsProvider implements EmbeddingsProvider {
 
   async embed(text: string): Promise<number[]> {
     const vec = new Array(this.dimension).fill(0);
-    const tokens = text.toLowerCase().split(/\s+/).filter(Boolean);
+    const lower = text.toLowerCase();
+    const wordTokens = lower.split(/\s+/).filter(Boolean);
+
+    // Add character bigrams to better support languages without spaces (e.g., Chinese)
+    const chars = Array.from(lower.matchAll(/[\p{L}\p{N}]/gu), m => m[0]);
+    const charBigrams: string[] = [];
+    for (let i = 0; i < chars.length - 1; i++) {
+      charBigrams.push(chars[i] + chars[i + 1]);
+    }
+
+    const tokens = [...wordTokens, ...charBigrams];
     for (const token of tokens) {
       const h = this.hash(token);
       // Signed hashing to spread signal
@@ -49,4 +59,3 @@ export class HashEmbeddingsProvider implements EmbeddingsProvider {
     return vec.map(x => x / norm);
   }
 }
-

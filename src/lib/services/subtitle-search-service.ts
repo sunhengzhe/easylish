@@ -3,6 +3,8 @@ import { SRTParser } from '../parsers/srt-parser';
 import { MemoryStore } from '../storage/memory-store';
 import { SearchOptions, SearchResponse, SubtitleEntry, VideoSubtitle } from '../types/subtitle';
 import { VectorSearchService } from './vector-search-service';
+import type { EmbeddingsProvider } from '../vector/embeddings';
+import { HashEmbeddingsProvider } from '../vector/embeddings';
 
 /**
  * 字幕搜索服务
@@ -14,7 +16,7 @@ export class SubtitleSearchService {
   private isInitialized = false;
   private initializationPromise: Promise<void> | null = null;
   private vectorService: VectorSearchService | null = null;
-  private useVector = false;
+  private useVector = true; // 向量检索为必选
 
   private constructor() {
     this.memoryStore = MemoryStore.getInstance();
@@ -70,14 +72,27 @@ export class SubtitleSearchService {
       // 初始化内存存储
       await this.memoryStore.initialize(videoSubtitles);
 
-      // 向量检索（可选）
-      this.useVector = String(process.env.VECTOR_SEARCH_ENABLED).toLowerCase() === 'true';
-      if (this.useVector) {
-        console.log('🧠 Initializing vector search index...');
-        this.vectorService = VectorSearchService.getInstance();
-        await this.vectorService.initialize(videoSubtitles);
-        console.log('✅ Vector search ready:', this.vectorService.isReady());
+      // 向量检索（必选）
+      console.log('🧠 Initializing vector search index...');
+      let provider: EmbeddingsProvider | undefined;
+      const providerName = (process.env.VECTOR_PROVIDER || 'xenova').toLowerCase();
+      try {
+        if (providerName === 'xenova') {
+          const { XenovaEmbeddingsProvider } = await import('../vector/embeddings-xenova');
+          provider = new XenovaEmbeddingsProvider(process.env.MODEL_ID || 'intfloat/multilingual-e5-small');
+        }
+      } catch (e) {
+        console.warn('Vector provider load failed, falling back to hash provider:', e);
       }
+      this.vectorService = VectorSearchService.getInstance(provider);
+      try {
+        await this.vectorService.initialize(videoSubtitles);
+      } catch (err) {
+        console.warn('Vector index build failed, falling back to hash provider:', err);
+        const dim = Number(process.env.VECTOR_DIM || '256');
+        await this.vectorService.rebuild(videoSubtitles, new HashEmbeddingsProvider(dim));
+      }
+      console.log('✅ Vector search ready:', this.vectorService.isReady());
 
       this.isInitialized = true;
       console.log('✅ Subtitle search service initialized successfully');

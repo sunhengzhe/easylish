@@ -32,6 +32,13 @@ export class VectorSearchService {
     this.initialized = true;
   }
 
+  async rebuild(videoSubtitles: VideoSubtitle[], embedder: EmbeddingsProvider): Promise<void> {
+    this.embedder = embedder;
+    this.index = new InMemoryVectorIndex();
+    this.initialized = false;
+    await this.initialize(videoSubtitles);
+  }
+
   async searchTopK(query: string, topK = 1): Promise<Array<{ entryId: string; score: number }>> {
     if (!this.initialized) return [];
     const qvec = await this.embedder.embed(query.toLowerCase());
@@ -40,4 +47,3 @@ export class VectorSearchService {
 
   isReady(): boolean { return this.initialized && this.index.size() > 0; }
 }
-

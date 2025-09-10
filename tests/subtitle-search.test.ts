@@ -5,12 +5,13 @@ import { SubtitleSearchService } from '@/lib/services/subtitle-search-service';
 
 const FIXTURE_DIR = path.join(process.cwd(), 'tests', 'fixtures', 'subtitles');
 
-describe('SubtitleSearchService - best match (keyword)', () => {
+describe('SubtitleSearchService - best match (vector mandatory)', () => {
   const service = SubtitleSearchService.getInstance();
 
   beforeAll(async () => {
     process.env.SUBTITLES_DIR = FIXTURE_DIR;
-    process.env.VECTOR_SEARCH_ENABLED = 'false';
+    // 强制向量检索，使用 hash 提供器以避免测试下载模型
+    process.env.VECTOR_PROVIDER = 'hash';
     await service.reload(FIXTURE_DIR);
   });
 
@@ -27,23 +28,8 @@ describe('SubtitleSearchService - best match (keyword)', () => {
     expect(best!.entry.videoId).toBe('TEST_ZH_1');
     expect(best!.entry.startTime).toBe(8000); // 00:00:08,000
   });
-});
 
-describe('SubtitleSearchService - best match (vector enabled)', () => {
-  const service = SubtitleSearchService.getInstance();
-
-  beforeAll(async () => {
-    process.env.SUBTITLES_DIR = FIXTURE_DIR;
-    process.env.VECTOR_SEARCH_ENABLED = 'true';
-    await service.reload(FIXTURE_DIR);
-  });
-
-  afterAll(async () => {
-    process.env.VECTOR_SEARCH_ENABLED = 'false';
-    await service.reload(FIXTURE_DIR);
-  });
-
-  it('should return a result via vector search (with fallback safety)', async () => {
+  it('should return a result via vector search (hash provider in tests)', async () => {
     const best = await service.getBestMatch('hello world');
     expect(best).not.toBeNull();
     expect(best!.entry.videoId).toBe('TEST_EN_1');
@@ -55,7 +41,7 @@ describe('SubtitleSearchService - ranking & pagination basics', () => {
 
   beforeAll(async () => {
     process.env.SUBTITLES_DIR = FIXTURE_DIR;
-    process.env.VECTOR_SEARCH_ENABLED = 'false';
+    process.env.VECTOR_PROVIDER = 'hash';
     await service.reload(FIXTURE_DIR);
   });
 
@@ -66,4 +52,3 @@ describe('SubtitleSearchService - ranking & pagination basics', () => {
     expect(results[0].entry.text.toLowerCase()).toContain('hello world');
   });
 });
-

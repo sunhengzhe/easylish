@@ -13,9 +13,11 @@ export class InMemoryVectorIndex implements VectorIndex {
     if (entries.length === 0) return;
     const texts = entries.map(e => e.normalizedText || e.text || '');
     const vectors = await embedder.embedBatch(texts);
-    for (let i = 0; i < entries.length; i++) {
+    const n = Math.min(entries.length, vectors.length);
+    for (let i = 0; i < n; i++) {
       const id = entries[i].id;
       const v = vectors[i];
+      if (!v || v.length === 0) continue;
       this.embeddings.set(id, Float32Array.from(v));
     }
   }
@@ -41,4 +43,3 @@ export class InMemoryVectorIndex implements VectorIndex {
     return dot / denom;
   }
 }
-
