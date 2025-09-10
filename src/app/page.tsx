@@ -154,8 +154,8 @@ export default function Home() {
 
           {/* 主要视频区域：占据中央位置 */}
           <div className="flex-1 flex items-center justify-center px-4 sm:px-6 md:px-8 py-6">
-            <div className="w-full max-w-5xl relative">
-              {/* 视频播放器 */}
+            <div className="w-full max-w-5xl">
+              {/* 视频播放器 - 保持全宽度 */}
               <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                 <iframe
                   key={`${videoData.videoId}-${videoData.startMs}`}
@@ -165,19 +165,21 @@ export default function Home() {
                   frameBorder="0"
                   allowFullScreen
                 />
+              </div>
 
-                {/* 导航按钮 - 只在有多个结果时显示 */}
-                {searchResults.length > 1 && (
-                  <>
+              {/* 独立的导航控制组件 */}
+              {searchResults.length > 1 && (
+                <div className="flex items-center justify-center mt-3 mb-1">
+                  <div className="flex items-center gap-2 bg-gray-50/50 dark:bg-gray-800/50 rounded-full px-3 py-1.5 backdrop-blur-sm">
                     {/* 左箭头 */}
                     <button
                       onClick={handlePrevious}
                       disabled={currentIndex === 0}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 disabled:bg-black/20 disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-all duration-200 backdrop-blur-sm"
+                      className="w-6 h-6 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-all duration-200"
                       aria-label="上一个结果"
                     >
                       <svg
-                        className="w-5 h-5 text-white"
+                        className="w-3 h-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -186,15 +188,20 @@ export default function Home() {
                       </svg>
                     </button>
 
+                    {/* 计数器 */}
+                    <span className="text-xs text-gray-400 dark:text-gray-500 font-normal px-1 select-none">
+                      {currentIndex + 1} / {searchResults.length}
+                    </span>
+
                     {/* 右箭头 */}
                     <button
                       onClick={handleNext}
                       disabled={currentIndex === searchResults.length - 1}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 disabled:bg-black/20 disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-all duration-200 backdrop-blur-sm"
+                      className="w-6 h-6 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-all duration-200"
                       aria-label="下一个结果"
                     >
                       <svg
-                        className="w-5 h-5 text-white"
+                        className="w-3 h-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -202,18 +209,13 @@ export default function Home() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
-
-                    {/* 计数器 */}
-                    <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
-                      {currentIndex + 1} / {searchResults.length}
-                    </div>
-                  </>
-                )}
-              </div>
+                  </div>
+                </div>
+              )}
 
               {/* 台词文本 */}
               {videoData.text && (
-                <div className="mt-6 text-center">
+                <div className="mt-4 text-center">
                   <p className="text-gray-900 dark:text-gray-100 font-medium text-lg sm:text-xl">
                     &ldquo;{videoData.text}&rdquo;
                   </p>
