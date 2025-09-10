@@ -7,9 +7,9 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "coverage": "vitest run --coverage"
+    "test": "vitest run --pool=forks --isolate=false",
+    "test:watch": "vitest --pool=forks --isolate=false",
+    "coverage": "vitest run --coverage --pool=forks --isolate=false"
   },
   "dependencies": {
     "react": "19.1.0",

@@ -18,21 +18,24 @@ describe('SubtitleSearchService - best match (vector mandatory)', () => {
   it('should find the best match for an English query', async () => {
     const best = await service.getBestMatch('good morning');
     expect(best).not.toBeNull();
-    expect(best!.entry.videoId).toBe('TEST_EN_1');
+    expect(best!.entry.videoId).toBe('TEST_EN');
+    expect(best!.entry.episodeNumber).toBe(1);
     expect(best!.entry.startTime).toBe(4000); // 00:00:04,000
   });
 
   it('should handle Chinese queries with Unicode normalization', async () => {
     const best = await service.getBestMatch('天气不错');
     expect(best).not.toBeNull();
-    expect(best!.entry.videoId).toBe('TEST_ZH_1');
+    expect(best!.entry.videoId).toBe('TEST_ZH');
+    expect(best!.entry.episodeNumber).toBe(1);
     expect(best!.entry.startTime).toBe(8000); // 00:00:08,000
   });
 
   it('should return a result via vector search (hash provider in tests)', async () => {
     const best = await service.getBestMatch('hello world');
     expect(best).not.toBeNull();
-    expect(best!.entry.videoId).toBe('TEST_EN_1');
+    expect(best!.entry.videoId).toBe('TEST_EN');
+    expect(best!.entry.episodeNumber).toBe(1);
   });
 });
 

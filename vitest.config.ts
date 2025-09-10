@@ -8,6 +8,8 @@ export default defineConfig({
     globals: false,
     pool: 'forks',
     singleThread: true,
+    threads: false,
+    isolate: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
