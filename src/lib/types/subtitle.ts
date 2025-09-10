@@ -9,6 +9,8 @@ export interface SubtitleEntry {
   text: string; // 台词文本
   normalizedText: string; // 标准化后的文本（用于搜索）
   duration: number; // 持续时间（毫秒）
+  // 可选：向量表示（如已预计算）
+  embedding?: number[];
 }
 
 export interface VideoSubtitle {

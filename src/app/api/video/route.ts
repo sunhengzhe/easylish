@@ -21,25 +21,19 @@ export async function POST(request: NextRequest) {
     if (!searchService.isReady()) {
       await searchService.initialize();
     }
-    const searchResults = await searchService.search({
-      query: input.trim(),
-      limit: 1, // 只取第一个最相关的结果
-    });
+    const best = await searchService.getBestMatch(input.trim());
 
-    if (searchResults.results.length === 0) {
+    if (!best) {
       return NextResponse.json(
         { error: 'No matching content found' },
         { status: 404 }
       );
     }
-
-    const bestMatch = searchResults.results[0];
-
     return NextResponse.json({
-      videoId: bestMatch.entry.videoId,
-      startMs: bestMatch.entry.startTime,
-      text: bestMatch.entry.text,
-      score: bestMatch.score,
+      videoId: best.entry.videoId,
+      startMs: best.entry.startTime,
+      text: best.entry.text,
+      score: best.score,
       success: true
     });
 

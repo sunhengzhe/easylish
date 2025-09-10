@@ -2,6 +2,7 @@ import path from 'path';
 import { SRTParser } from '../parsers/srt-parser';
 import { MemoryStore } from '../storage/memory-store';
 import { SearchOptions, SearchResponse, SubtitleEntry, VideoSubtitle } from '../types/subtitle';
+import { VectorSearchService } from './vector-search-service';
 
 /**
  * 字幕搜索服务
@@ -12,6 +13,8 @@ export class SubtitleSearchService {
   private memoryStore: MemoryStore;
   private isInitialized = false;
   private initializationPromise: Promise<void> | null = null;
+  private vectorService: VectorSearchService | null = null;
+  private useVector = false;
 
   private constructor() {
     this.memoryStore = MemoryStore.getInstance();
@@ -66,6 +69,15 @@ export class SubtitleSearchService {
 
       // 初始化内存存储
       await this.memoryStore.initialize(videoSubtitles);
+
+      // 向量检索（可选）
+      this.useVector = String(process.env.VECTOR_SEARCH_ENABLED).toLowerCase() === 'true';
+      if (this.useVector) {
+        console.log('🧠 Initializing vector search index...');
+        this.vectorService = VectorSearchService.getInstance();
+        await this.vectorService.initialize(videoSubtitles);
+        console.log('✅ Vector search ready:', this.vectorService.isReady());
+      }
 
       this.isInitialized = true;
       console.log('✅ Subtitle search service initialized successfully');
@@ -178,6 +190,27 @@ export class SubtitleSearchService {
     }
 
     return Array.from(suggestions).slice(0, limit);
+  }
+
+  /**
+   * 获取最优匹配（向量优先，回退关键词）
+   */
+  async getBestMatch(query: string): Promise<{ entry: SubtitleEntry; score: number } | null> {
+    await this.ensureInitialized();
+
+    // 尝试使用向量检索
+    if (this.useVector && this.vectorService && this.vectorService.isReady()) {
+      const top = await this.vectorService.searchTopK(query, 1);
+      if (top.length > 0) {
+        const byId = await this.getEntryById(top[0].entryId);
+        if (byId) return { entry: byId, score: top[0].score };
+      }
+    }
+
+    // 回退到关键词检索
+    const keyword = await this.search({ query, limit: 1 });
+    if (keyword.results.length > 0) return keyword.results[0];
+    return null;
   }
 
   /**

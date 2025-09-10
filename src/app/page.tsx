@@ -9,39 +9,19 @@ interface VideoData {
   score?: number;
 }
 
-interface SearchResult {
-  entry: {
-    id: string;
-    videoId: string;
-    sequenceNumber: number;
-    startTime: number;
-    endTime: number;
-    text: string;
-    normalizedText: string;
-    duration: number;
-  };
-  score: number;
-}
-
-interface SearchResponse {
-  results: SearchResult[];
-  total: number;
-  query: string;
-}
+// 首页仅提供一个功能：输入台词，定位最接近的视频与时间点
 
 export default function Home() {
   const [inputValue, setInputValue] = useState("");
   const [showVideo, setShowVideo] = useState(false);
   const [videoData, setVideoData] = useState<VideoData | null>(null);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchMode, setSearchMode] = useState<'video' | 'search'>('video');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
   };
 
-  const handleVideoSubmit = async () => {
+  const handleSubmit = async () => {
     if (inputValue.trim().length === 0) return;
 
     setLoading(true);
@@ -63,7 +43,6 @@ export default function Home() {
           score: data.score,
         });
         setShowVideo(true);
-        setSearchResults([]);
       } else {
         const errorData = await response.json();
         alert(errorData.error || 'No matching content found');
@@ -76,84 +55,19 @@ export default function Home() {
     }
   };
 
-  const handleSearch = async () => {
-    if (inputValue.trim().length === 0) return;
-
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(inputValue.trim())}&limit=10`);
-
-      if (response.ok) {
-        const data = await response.json();
-        const searchResponse: SearchResponse = data.data;
-        setSearchResults(searchResponse.results);
-        setShowVideo(false);
-      } else {
-        console.error('Search request failed');
-        alert('搜索失败，请稍后重试');
-      }
-    } catch (error) {
-      console.error('Error calling search API:', error);
-      alert('搜索出错，请稍后重试');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = () => {
-    if (searchMode === 'video') {
-      handleVideoSubmit();
-    } else {
-      handleSearch();
-    }
-  };
-
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleSubmit();
     }
   };
 
-  const handleResultClick = (result: SearchResult) => {
-    setVideoData({
-      videoId: result.entry.videoId,
-      startMs: result.entry.startTime,
-      text: result.entry.text,
-      score: result.score,
-    });
-    setShowVideo(true);
-    setSearchResults([]);
-  };
+  // 页面简化后，无搜索结果列表
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-white dark:bg-gray-900">
       {/* 主要内容区域 */}
       <div className="w-full max-w-4xl mx-auto">
-        {/* 模式切换 */}
-        <div className="mb-6 flex justify-center">
-          <div className="inline-flex rounded-lg border border-gray-300 dark:border-gray-600 p-1 bg-gray-100 dark:bg-gray-800">
-            <button
-              onClick={() => setSearchMode('video')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                searchMode === 'video'
-                  ? 'bg-blue-500 text-white shadow'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              }`}
-            >
-              智能播放
-            </button>
-            <button
-              onClick={() => setSearchMode('search')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                searchMode === 'search'
-                  ? 'bg-blue-500 text-white shadow'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              }`}
-            >
-              台词搜索
-            </button>
-          </div>
-        </div>
+        {/* 单一功能：输入台词，定位最接近的视频片段 */}
 
         {/* 输入框和按钮 */}
         <div className="mb-8">
@@ -163,11 +77,7 @@ export default function Home() {
               value={inputValue}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
-              placeholder={
-                searchMode === 'video'
-                  ? "输入任意内容，找到最相关的视频片段..."
-                  : "搜索台词内容..."
-              }
+              placeholder={"输入台词内容，定位最接近的视频片段..."}
               className="flex-1 px-6 py-4 text-lg border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
             />
             <button
@@ -175,50 +85,14 @@ export default function Home() {
               disabled={inputValue.trim().length === 0 || loading}
               className="px-6 py-4 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              {loading ? '搜索中...' : (searchMode === 'video' ? '播放' : '搜索')}
+              {loading ? '定位中...' : '定位'}
             </button>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            {searchMode === 'video'
-              ? "智能播放模式：根据输入内容找到最匹配的视频片段并播放"
-              : "台词搜索模式：搜索所有相关的台词，点击结果播放对应片段"
-            }
+            根据输入台词定位到最匹配的视频片段并播放。
           </p>
         </div>
 
-        {/* 搜索结果区域 */}
-        {searchResults.length > 0 && (
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
-              搜索结果 ({searchResults.length} 条)
-            </h3>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {searchResults.map((result, index) => (
-                <div
-                  key={result.entry.id}
-                  onClick={() => handleResultClick(result)}
-                  className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                      {result.entry.videoId}
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {Math.floor(result.entry.startTime / 1000)}s - {Math.floor(result.entry.endTime / 1000)}s
-                    </span>
-                  </div>
-                  <p className="text-gray-900 dark:text-gray-100 mb-2">
-                    {result.entry.text}
-                  </p>
-                  <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
-                    <span>相关性: {result.score.toFixed(1)}</span>
-                    <span>点击播放此片段</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* 视频区域 */}
         {showVideo && videoData && (
@@ -239,7 +113,7 @@ export default function Home() {
               {videoData.text && (
                 <div className="text-center">
                   <p className="text-gray-900 dark:text-gray-100 font-medium">
-                    "{videoData.text}"
+                    &ldquo;{videoData.text}&rdquo;
                   </p>
                   {videoData.score && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
