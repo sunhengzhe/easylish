@@ -17,10 +17,7 @@ export async function POST(request: NextRequest) {
     // 使用字幕搜索服务查找相关内容
     const searchService = SubtitleSearchService.getInstance();
 
-    // 确保服务已初始化
-    if (!searchService.isReady()) {
-      await searchService.initialize();
-    }
+    // 服务应该已在启动时初始化，直接使用
     const best = await searchService.getBestMatch(input.trim());
 
     if (!best) {

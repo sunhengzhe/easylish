@@ -38,21 +38,24 @@ export class SubtitleSearchService {
   async initialize(subtitlesDir?: string): Promise<void> {
     // 防止重复初始化
     if (this.isInitialized) {
+      console.log('🔄 Service already initialized, skipping...');
       return;
     }
 
     if (this.initializationPromise) {
-      return this.initializationPromise;
+      console.log('🔄 Initialization already in progress, waiting...');
+      await this.initializationPromise;
+      return;
     }
 
+    console.log('🚀 Starting subtitle search service initialization...');
     this.initializationPromise = this.doInitialize(subtitlesDir);
     await this.initializationPromise;
   }
 
   private async doInitialize(subtitlesDir?: string): Promise<void> {
+    const startTime = Date.now();
     try {
-      console.log('🚀 Starting subtitle search service initialization...');
-
       // 默认字幕目录，支持通过环境变量覆盖
       const defaultSubtitlesDir = path.join(process.cwd(), 'data', 'subtitles');
       const envDir = process.env.SUBTITLES_DIR;
@@ -79,7 +82,7 @@ export class SubtitleSearchService {
       try {
         if (providerName === 'xenova') {
           const { XenovaEmbeddingsProvider } = await import('../vector/embeddings-xenova');
-          provider = new XenovaEmbeddingsProvider(process.env.MODEL_ID || 'intfloat/multilingual-e5-small');
+          provider = new XenovaEmbeddingsProvider(process.env.MODEL_ID);
         }
       } catch (e) {
         console.warn('Vector provider load failed, falling back to hash provider:', e);
@@ -92,10 +95,14 @@ export class SubtitleSearchService {
         const dim = Number(process.env.VECTOR_DIM || '256');
         await this.vectorService.rebuild(videoSubtitles, new HashEmbeddingsProvider(dim));
       }
-      console.log('✅ Vector search ready:', this.vectorService.isReady());
+
+      const vectorReady = this.vectorService.isReady();
+      console.log('✅ Vector search ready:', vectorReady);
 
       this.isInitialized = true;
-      console.log('✅ Subtitle search service initialized successfully');
+
+      const duration = Date.now() - startTime;
+      console.log(`✅ Subtitle search service initialized successfully in ${duration}ms`);
 
       // 打印统计信息
       const stats = this.memoryStore.getStats();
@@ -103,6 +110,9 @@ export class SubtitleSearchService {
 
     } catch (error) {
       console.error('❌ Failed to initialize subtitle search service:', error);
+      // 重置状态，允许重试
+      this.isInitialized = false;
+      this.initializationPromise = null;
       throw error;
     }
   }

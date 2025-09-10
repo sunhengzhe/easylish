@@ -7,11 +7,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
 # Enable corepack (pnpm)
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.12.4 --activate
 
 # Install deps first (better cache)
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile --ignore-scripts=false
 
 # Copy source and build
 COPY . .
@@ -22,7 +22,7 @@ FROM node:20-slim AS runner
 
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
-    PORT=3000 \
+    PORT=8080 \
     HOSTNAME=0.0.0.0 \
     TRANSFORMERS_CACHE=/app/.cache/transformers \
     VECTOR_PROVIDER=xenova \
@@ -30,7 +30,7 @@ ENV NODE_ENV=production \
 
 WORKDIR /app
 
-# Create cache directory for model files
+# Create cache directory for model files, install certs for HTTPS
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /app/.cache/transformers
@@ -39,11 +39,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-
-# Optional: include data directory (or mount as volume in deployment)
 COPY --from=builder /app/data ./data
 
-EXPOSE 3000
+# Create a minimal mock sharp module for @xenova/transformers
+# Since we only use text processing, we don't need actual sharp functionality
+RUN mkdir -p node_modules/sharp && \
+    echo '{"name":"sharp","version":"0.34.3","main":"index.js","type":"commonjs"}' > node_modules/sharp/package.json && \
+    echo 'module.exports = { versions: { vips: "8.15.3" }, format: {}, resize: () => ({}), png: () => ({}), jpeg: () => ({}), webp: () => ({}), avif: () => ({}), toBuffer: () => Buffer.from([]), toFile: () => Promise.resolve() };' > node_modules/sharp/index.js
+
+EXPOSE 8080
 
 # Start Next.js standalone server
 CMD ["node", "server.js"]

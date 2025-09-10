@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import type { SearchResult as ApiSearchResult } from "@/lib/types/subtitle";
-import Image from "next/image";
 
 interface VideoData {
   videoId: string;
@@ -155,21 +154,20 @@ export default function Home() {
         // 视频播放模式：视频为主体，其他元素为配角
         <div className="min-h-screen flex flex-col">
           {/* 顶部区域：Logo 在顶部中央 */}
-          <div className="flex justify-center p-4 sm:p-6">
-            <Image
+          <div className="flex justify-center p-2 sm:p-3">
+            <img
               src="/easylish-logo.png"
               alt="Easylish Logo"
               width={120}
               height={48}
               className="object-contain"
               style={{ width: 'auto', height: 'auto', maxWidth: '120px', maxHeight: '48px' }}
-              priority
             />
           </div>
 
           {/* 主要视频区域：占据中央位置 */}
-          <div className="flex-1 flex items-center justify-center px-4 sm:px-6 md:px-8 py-6">
-            <div className="w-full max-w-5xl">
+          <div className="flex-1 flex items-center justify-center px-4 sm:px-6 md:px-8 py-3">
+            <div className="w-full max-w-3xl">
               {/* 视频播放器 - 保持全宽度 */}
               <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                 <iframe
@@ -269,15 +267,14 @@ export default function Home() {
           <div className="w-full max-w-2xl mx-auto text-center">
             {/* Logo */}
             <div className="mb-12">
-                  <Image
-                    src="/easylish-logo.png"
-                    alt="Easylish Logo"
-                    width={300}
-                    height={120}
-                    className="object-contain mx-auto"
-                    style={{ width: 'auto', height: 'auto', maxWidth: '300px', maxHeight: '120px' }}
-                    priority
-                  />
+              <img
+                src="/easylish-logo.png"
+                alt="Easylish Logo"
+                width={300}
+                height={120}
+                className="object-contain mx-auto"
+                style={{ width: 'auto', height: 'auto', maxWidth: '300px', maxHeight: '120px' }}
+              />
             </div>
 
             {/* 输入框和按钮 */}

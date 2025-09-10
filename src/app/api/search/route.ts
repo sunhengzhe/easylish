@@ -32,10 +32,7 @@ export async function GET(request: NextRequest) {
     // 执行搜索（支持 strategy=vector|keyword，默认 keyword 保持兼容）
     const searchService = SubtitleSearchService.getInstance();
 
-    // 确保服务已初始化
-    if (!searchService.isReady()) {
-      await searchService.initialize();
-    }
+    // 服务应该已在启动时初始化，直接使用
 
     const strategy = (searchParams.get('strategy') || 'keyword').toLowerCase();
     const results = strategy === 'vector'
@@ -81,10 +78,7 @@ export async function POST(request: NextRequest) {
 
     const searchService = SubtitleSearchService.getInstance();
 
-    // 确保服务已初始化
-    if (!searchService.isReady()) {
-      await searchService.initialize();
-    }
+    // 服务应该已在启动时初始化，直接使用
 
     const results = String(strategy).toLowerCase() === 'vector'
       ? await searchService.searchVectorTopK(searchOptions.query, searchOptions.limit ?? 20)
