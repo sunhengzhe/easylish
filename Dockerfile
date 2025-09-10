@@ -3,7 +3,6 @@
 # --- Builder stage ---
 FROM node:20-slim AS builder
 
-ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
@@ -32,7 +31,9 @@ ENV NODE_ENV=production \
 WORKDIR /app
 
 # Create cache directory for model files
-RUN mkdir -p /app/.cache/transformers
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /app/.cache/transformers
 
 # Copy standalone server output
 COPY --from=builder /app/.next/standalone ./
@@ -46,4 +47,3 @@ EXPOSE 3000
 
 # Start Next.js standalone server
 CMD ["node", "server.js"]
-

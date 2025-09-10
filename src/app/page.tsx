@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { SearchResult as ApiSearchResult } from "@/lib/types/subtitle";
 import Image from "next/image";
 
@@ -21,6 +21,7 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState<ApiSearchResult[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
@@ -133,6 +134,7 @@ export default function Home() {
     }
   };
 
+
   // 页面简化后，无搜索结果列表
 
   return (
@@ -233,8 +235,9 @@ export default function Home() {
                   value={inputValue}
                   onChange={handleInputChange}
                   onKeyPress={handleKeyPress}
+                  disabled={loading}
                   placeholder="继续输入台词定位其他片段..."
-                  className="flex-1 px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
+                  className="flex-1 px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
                 />
                 <button
                   onClick={handleSubmit}
@@ -271,8 +274,9 @@ export default function Home() {
                   value={inputValue}
                   onChange={handleInputChange}
                   onKeyPress={handleKeyPress}
-                  placeholder="输入台词内容，看看英文怎么说..."
-                  className="flex-1 px-6 py-4 text-lg border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200"
+                  disabled={loading}
+                  placeholder="输入内容，看看地道的英文台词怎么说..."
+                  className="flex-1 px-6 py-4 text-lg border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
                 />
                 <button
                   onClick={handleSubmit}

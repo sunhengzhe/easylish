@@ -1,7 +1,7 @@
 import path from 'path';
 import { SRTParser } from '../parsers/srt-parser';
 import { MemoryStore } from '../storage/memory-store';
-import { SearchOptions, SearchResponse, SubtitleEntry, VideoSubtitle } from '../types/subtitle';
+import { SearchOptions, SearchResponse, SubtitleEntry, VideoSubtitle, SearchResult } from '../types/subtitle';
 import { VectorSearchService } from './vector-search-service';
 import type { EmbeddingsProvider } from '../vector/embeddings';
 import { HashEmbeddingsProvider } from '../vector/embeddings';
