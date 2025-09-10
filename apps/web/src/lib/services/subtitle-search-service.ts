@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import { SRTParser } from '../parsers/srt-parser';
 import { MemoryStore } from '../storage/memory-store';
 import { SearchOptions, SearchResponse, SubtitleEntry, VideoSubtitle, SearchResult } from '../types/subtitle';
@@ -57,7 +58,7 @@ export class SubtitleSearchService {
     const startTime = Date.now();
     try {
       // 默认字幕目录，支持通过环境变量覆盖
-      const defaultSubtitlesDir = path.join(process.cwd(), 'data', 'subtitles');
+      const defaultSubtitlesDir = this.resolveDefaultSubtitlesDir();
       const envDir = process.env.SUBTITLES_DIR;
       const targetDir = subtitlesDir || envDir || defaultSubtitlesDir;
 
@@ -115,6 +116,24 @@ export class SubtitleSearchService {
       this.initializationPromise = null;
       throw error;
     }
+  }
+
+  private resolveDefaultSubtitlesDir(): string {
+    // Try common locations based on monorepo layout and container runtime
+    const candidates = [
+      path.join(process.cwd(), 'data', 'subtitles'), // container runtime / dev if run from repo root
+      path.resolve(process.cwd(), '../../data/subtitles'), // dev: cwd = apps/web
+      path.resolve(process.cwd(), '../data/subtitles'),
+    ];
+    for (const p of candidates) {
+      try {
+        if (fs.existsSync(p)) return p;
+      } catch {}
+    }
+    // Fallback to apps/web/data/subtitles (may not exist) — clear log to aid debugging
+    const fallback = path.join(process.cwd(), 'data', 'subtitles');
+    console.warn(`[SubtitleSearchService] Could not locate data/subtitles, falling back to: ${fallback}`);
+    return fallback;
   }
 
   /**

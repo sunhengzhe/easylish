@@ -1,36 +1,25 @@
 {
-  "name": "easylish",
-  "version": "0.1.0",
+  "name": "easylish-monorepo",
   "private": true,
   "packageManager": "pnpm@10.12.4",
+  "workspaces": [
+    "apps/*",
+    "services/*"
+  ],
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
+    "dev": "pnpm -C apps/web dev",
+    "build": "pnpm -C apps/web build",
+    "start": "pnpm -C apps/web start",
+    "lint": "pnpm -C apps/web lint",
     "test": "vitest run --pool=forks --isolate=false",
     "test:watch": "vitest --pool=forks --isolate=false",
     "coverage": "vitest run --coverage --pool=forks --isolate=false",
     "transcribe:local": "node scripts/transcribe.mjs"
   },
-  "dependencies": {
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.5.2",
-    "@xenova/transformers": "^2.17.2"
-  },
-  "optionalDependencies": {},
   "devDependencies": {
-    "typescript": "^5",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
-    "eslint": "^9",
-    "eslint-config-next": "15.5.2",
-    "@eslint/eslintrc": "^3",
     "vitest": "^2.0.0",
-    "@vitest/coverage-v8": "^2.0.0"
+    "@vitest/coverage-v8": "^2.0.0",
+    "typescript": "^5"
   }
 }
+

@@ -11,10 +11,13 @@ RUN corepack enable && corepack prepare pnpm@10.12.4 --activate
 
 # Install deps first (better cache)
 COPY package.json pnpm-lock.yaml ./
+# Include app package manifest so pnpm can resolve workspace properly
+COPY apps/web/package.json ./apps/web/package.json
 RUN pnpm install --no-frozen-lockfile --ignore-scripts=false
 
 # Copy source and build
 COPY . .
+# Build web app via workspace script
 RUN pnpm build
 
 # --- Runtime stage ---
@@ -36,9 +39,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     && mkdir -p /app/.cache/transformers
 
 # Copy standalone server output
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
+COPY --from=builder /app/apps/web/.next/standalone ./
+COPY --from=builder /app/apps/web/.next/static ./.next/static
+COPY --from=builder /app/apps/web/public ./public
 COPY --from=builder /app/data ./data
 
 # Create a minimal mock sharp module for @xenova/transformers
