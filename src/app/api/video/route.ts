@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { SubtitleSearchService } from '@/lib/services/subtitle-search-service';
+
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,13 +14,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 这里可以根据用户输入来决定返回哪个视频
-    // 目前先返回固定的视频信息，后续可以扩展为更复杂的逻辑
-    const videoData = getVideoByInput(input.trim());
+    // 使用字幕搜索服务查找相关内容
+    const searchService = SubtitleSearchService.getInstance();
+
+    // 确保服务已初始化
+    if (!searchService.isReady()) {
+      await searchService.initialize();
+    }
+    const searchResults = await searchService.search({
+      query: input.trim(),
+      limit: 1, // 只取第一个最相关的结果
+    });
+
+    if (searchResults.results.length === 0) {
+      return NextResponse.json(
+        { error: 'No matching content found' },
+        { status: 404 }
+      );
+    }
+
+    const bestMatch = searchResults.results[0];
 
     return NextResponse.json({
-      videoId: videoData.videoId,
-      startMs: videoData.startMs,
+      videoId: bestMatch.entry.videoId,
+      startMs: bestMatch.entry.startTime,
+      text: bestMatch.entry.text,
+      score: bestMatch.score,
       success: true
     });
 
@@ -27,37 +49,5 @@ export async function POST(request: NextRequest) {
       { error: 'Internal server error' },
       { status: 500 }
     );
-  }
-}
-
-// 根据用户输入返回对应的视频信息
-function getVideoByInput(input: string): { videoId: string; startMs: number } {
-  // 这里可以实现更复杂的逻辑来匹配不同的视频
-  // 比如关键词匹配、AI 分析等
-
-  const inputLower = input.toLowerCase();
-
-  // 示例：根据不同关键词返回不同视频
-  if (inputLower.includes('学习') || inputLower.includes('教育')) {
-    return {
-      videoId: 'BV1B7411m7LV',
-      startMs: 75000 // 75秒
-    };
-  } else if (inputLower.includes('音乐') || inputLower.includes('歌曲')) {
-    return {
-      videoId: 'BV1fK6RYZEkd',
-      startMs: 30000 // 30秒
-    };
-  } else if (inputLower.includes('技术') || inputLower.includes('编程')) {
-    return {
-      videoId: 'BV1B7411m7LV',
-      startMs: 120000 // 120秒
-    };
-  } else {
-    // 默认视频
-    return {
-      videoId: 'BV1B7411m7LV',
-      startMs: 75000
-    };
   }
 }
