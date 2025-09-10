@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       options.videoIds = videoIds.split(',').map(id => id.trim());
     }
 
-    // 执行搜索
+    // 执行搜索（支持 strategy=vector|keyword，默认 keyword 保持兼容）
     const searchService = SubtitleSearchService.getInstance();
 
     // 确保服务已初始化
@@ -37,7 +37,10 @@ export async function GET(request: NextRequest) {
       await searchService.initialize();
     }
 
-    const results = await searchService.search(options);
+    const strategy = (searchParams.get('strategy') || 'keyword').toLowerCase();
+    const results = strategy === 'vector'
+      ? await searchService.searchVectorTopK(options.query, options.limit ?? 20)
+      : await searchService.search(options);
 
     return NextResponse.json({
       success: true,
@@ -60,7 +63,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { query, options = {} } = body;
+    const { query, options = {}, strategy = 'keyword' } = body;
 
     if (!query) {
       return NextResponse.json(
@@ -83,7 +86,9 @@ export async function POST(request: NextRequest) {
       await searchService.initialize();
     }
 
-    const results = await searchService.search(searchOptions);
+    const results = String(strategy).toLowerCase() === 'vector'
+      ? await searchService.searchVectorTopK(searchOptions.query, searchOptions.limit ?? 20)
+      : await searchService.search(searchOptions);
 
     return NextResponse.json({
       success: true,

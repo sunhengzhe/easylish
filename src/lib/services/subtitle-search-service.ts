@@ -229,6 +229,34 @@ export class SubtitleSearchService {
   }
 
   /**
+   * 向量检索 Top-K（返回 SearchResponse 结构，包含归一化置信度）
+   */
+  async searchVectorTopK(query: string, limit = 10) {
+    await this.ensureInitialized();
+
+    if (!this.vectorService || !this.vectorService.isReady()) {
+      // 回退到关键词检索
+      return this.search({ query, limit });
+    }
+
+    const top = await this.vectorService.searchTopK(query, limit);
+    const results = [] as SearchResult[];
+    for (const item of top) {
+      const entry = await this.getEntryById(item.entryId);
+      if (entry) {
+        const score = item.score; // cosine similarity [-1, 1]
+        const confidence = Math.max(0, Math.min(1, (score + 1) / 2));
+        results.push({ entry, score, confidence, source: 'vector' });
+      }
+    }
+    return {
+      results,
+      total: results.length,
+      query,
+    } as SearchResponse;
+  }
+
+  /**
    * 获取热门搜索词（基于字幕内容的词频分析）
    */
   async getPopularTerms(limit = 20): Promise<Array<{ term: string; frequency: number }>> {

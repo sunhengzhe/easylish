@@ -31,6 +31,8 @@ export interface SearchOptions {
 export interface SearchResult {
   entry: SubtitleEntry;
   score: number; // 匹配分数
+  source?: 'keyword' | 'vector'; // 结果来源
+  confidence?: number; // 0..1 归一化置信度
 }
 
 export interface SearchResponse {

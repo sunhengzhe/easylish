@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { SearchResult as ApiSearchResult } from "@/lib/types/subtitle";
 import Image from "next/image";
 
 interface VideoData {
@@ -17,6 +18,8 @@ export default function Home() {
   const [inputValue, setInputValue] = useState("");
   const [showVideo, setShowVideo] = useState(false);
   const [videoData, setVideoData] = useState<VideoData | null>(null);
+  const [searchResults, setSearchResults] = useState<ApiSearchResult[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,28 +31,42 @@ export default function Home() {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/video', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ input: inputValue.trim() }),
-      });
+      // 获取多个搜索结果
+      const response = await fetch(`/api/search?q=${encodeURIComponent(inputValue.trim())}&limit=10&strategy=vector`);
 
-        if (response.ok) {
-          const data = await response.json();
+      if (response.ok) {
+        const data = await response.json();
+        const results = data.data.results as ApiSearchResult[];
+
+        // 过滤高置信度结果（优先使用归一化置信度）
+        const maxScore = results.length > 0 ? Math.max(...results.map(r => r.score)) : 0;
+        const highQualityResults = results.filter(result => {
+          if (typeof result.confidence === 'number') {
+            return result.confidence >= 0.5; // 向量检索：建议阈值 0.5~0.7
+          }
+          // 关键词检索回退：按相对阈值
+          return maxScore > 0 ? result.score >= maxScore * 0.6 : true;
+        });
+
+        if (highQualityResults.length > 0) {
+          setSearchResults(highQualityResults);
+          setCurrentIndex(0);
+
+          // 设置第一个结果为当前视频
+          const firstResult = highQualityResults[0];
           const videoData = {
-            videoId: data.videoId,
-            episode: data.episode || 1,
-            startMs: data.startMs,
-            text: data.text,
-            score: data.score,
+            videoId: firstResult.entry.videoId,
+            episode: firstResult.entry.episodeNumber || 1,
+            startMs: firstResult.entry.startTime,
+            text: firstResult.entry.text,
+            score: firstResult.score,
           };
 
           // 调试信息输出到控制台
-          console.log('🎯 视频定位结果:', {
+          console.log('🎯 搜索结果:', {
+            totalResults: highQualityResults.length,
+            currentIndex: 1,
             videoId: videoData.videoId,
-            episode: videoData.episode,
             startTime: `${Math.floor(videoData.startMs / 1000)}秒`,
             matchedText: videoData.text,
             matchScore: videoData.score?.toFixed(2)
@@ -58,15 +75,56 @@ export default function Home() {
           setVideoData(videoData);
           setShowVideo(true);
         } else {
-          const errorData = await response.json();
-          alert(errorData.error || 'No matching content found');
+          alert('未找到高质量的匹配结果');
         }
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'No matching content found');
+      }
     } catch (error) {
       console.error('Error calling API:', error);
       alert('搜索出错，请稍后重试');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      const newIndex = currentIndex - 1;
+      setCurrentIndex(newIndex);
+      updateVideoFromResult(newIndex);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentIndex < searchResults.length - 1) {
+      const newIndex = currentIndex + 1;
+      setCurrentIndex(newIndex);
+      updateVideoFromResult(newIndex);
+    }
+  };
+
+  const updateVideoFromResult = (index: number) => {
+    const result = searchResults[index];
+    const videoData = {
+      videoId: result.entry.videoId,
+      episode: result.entry.episodeNumber || 1,
+      startMs: result.entry.startTime,
+      text: result.entry.text,
+      score: result.score,
+    };
+
+    console.log('🎯 切换结果:', {
+      currentIndex: index + 1,
+      totalResults: searchResults.length,
+      videoId: videoData.videoId,
+      startTime: `${Math.floor(videoData.startMs / 1000)}秒`,
+      matchedText: videoData.text,
+      matchScore: videoData.score?.toFixed(2)
+    });
+
+    setVideoData(videoData);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -96,16 +154,64 @@ export default function Home() {
 
           {/* 主要视频区域：占据中央位置 */}
           <div className="flex-1 flex items-center justify-center px-4 sm:px-6 md:px-8 py-6">
-            <div className="w-full max-w-5xl">
+            <div className="w-full max-w-5xl relative">
+              {/* 视频播放器 */}
               <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                 <iframe
-                  src={`//player.bilibili.com/player.html?bvid=${videoData.videoId}&p=${videoData.episode || 1}&autoplay=1&t=${Math.floor(videoData.startMs / 1000)}&muted=0&danmaku=0`}
+                  key={`${videoData.videoId}-${videoData.startMs}`}
+                  src={`//player.bilibili.com/player.html?bvid=${videoData.videoId}&p=${videoData.episode || 1}&autoplay=1&t=${Math.floor(videoData.startMs / 1000)}&muted=0&danmaku=0&high_quality=1`}
                   className="absolute top-0 left-0 w-full h-full rounded-lg shadow-2xl"
                   scrolling="no"
                   frameBorder="0"
                   allowFullScreen
                 />
+
+                {/* 导航按钮 - 只在有多个结果时显示 */}
+                {searchResults.length > 1 && (
+                  <>
+                    {/* 左箭头 */}
+                    <button
+                      onClick={handlePrevious}
+                      disabled={currentIndex === 0}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 disabled:bg-black/20 disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-all duration-200 backdrop-blur-sm"
+                      aria-label="上一个结果"
+                    >
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+
+                    {/* 右箭头 */}
+                    <button
+                      onClick={handleNext}
+                      disabled={currentIndex === searchResults.length - 1}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 disabled:bg-black/20 disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-all duration-200 backdrop-blur-sm"
+                      aria-label="下一个结果"
+                    >
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+
+                    {/* 计数器 */}
+                    <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
+                      {currentIndex + 1} / {searchResults.length}
+                    </div>
+                  </>
+                )}
               </div>
+
+              {/* 台词文本 */}
               {videoData.text && (
                 <div className="mt-6 text-center">
                   <p className="text-gray-900 dark:text-gray-100 font-medium text-lg sm:text-xl">

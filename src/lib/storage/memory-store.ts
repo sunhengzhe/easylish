@@ -128,11 +128,16 @@ export class MemoryStore {
       const entry = this.subtitleEntries.get(entryId);
       if (!entry) continue;
       const score = this.calculateRelevanceScore(entry, query);
-      allResults.push({ entry, score });
+      allResults.push({ entry, score, source: 'keyword' });
     }
 
     allResults.sort((a, b) => b.score - a.score);
-    const results = allResults.slice(offset, offset + limit);
+    const maxScore = allResults.length > 0 ? allResults[0].score : 0;
+    // 归一化置信度（相对本次查询的最高分）
+    const results = allResults.slice(offset, offset + limit).map(r => ({
+      ...r,
+      confidence: maxScore > 0 ? r.score / maxScore : 0,
+    }));
 
     return {
       results,
