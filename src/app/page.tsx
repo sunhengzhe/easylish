@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import type { SearchResult as ApiSearchResult } from "@/lib/types/subtitle";
 import Image from "next/image";
 
@@ -21,6 +21,11 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState<ApiSearchResult[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,7 +140,14 @@ export default function Home() {
   };
 
 
-  // 页面简化后，无搜索结果列表
+  // 防止hydration不匹配，确保客户端渲染一致性
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
@@ -150,6 +162,7 @@ export default function Home() {
               width={120}
               height={48}
               className="object-contain"
+              style={{ width: 'auto', height: 'auto', maxWidth: '120px', maxHeight: '48px' }}
               priority
             />
           </div>
@@ -256,14 +269,15 @@ export default function Home() {
           <div className="w-full max-w-2xl mx-auto text-center">
             {/* Logo */}
             <div className="mb-12">
-              <Image
-                src="/easylish-logo.png"
-                alt="Easylish Logo"
-                width={300}
-                height={120}
-                className="object-contain mx-auto"
-                priority
-              />
+                  <Image
+                    src="/easylish-logo.png"
+                    alt="Easylish Logo"
+                    width={300}
+                    height={120}
+                    className="object-contain mx-auto"
+                    style={{ width: 'auto', height: 'auto', maxWidth: '300px', maxHeight: '120px' }}
+                    priority
+                  />
             </div>
 
             {/* 输入框和按钮 */}
