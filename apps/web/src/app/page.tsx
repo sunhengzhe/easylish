@@ -5,6 +5,7 @@ import type { SearchResult as ApiSearchResult } from "@/lib/types/subtitle";
 import VideoPlayer from "./components/VideoPlayer";
 import ResultNavigator from "./components/ResultNavigator";
 import SuggestionScroller from "./components/SuggestionScroller";
+import { useToast } from "./components/Toast";
 
 interface VideoData {
   videoId: string;
@@ -47,6 +48,7 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [isResetting, setIsResetting] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     setMounted(true);
@@ -141,15 +143,24 @@ export default function Home() {
           setVideoData(videoData);
           setShowVideo(true);
         } else {
-          alert('未找到高质量的匹配结果');
+          showToast({
+            type: 'info',
+            message: '这句暂时没匹配到合适片段，换个说法再试试？',
+          });
         }
       } else {
-        const errorData = await response.json();
-        alert(errorData.error || 'No matching content found');
+        // 服务返回非 2xx
+        showToast({
+          type: 'warning',
+          message: '服务有点忙，稍后再试试～',
+        });
       }
     } catch (error) {
       console.error('Error calling API:', error);
-      alert('搜索出错，请稍后重试');
+      showToast({
+        type: 'error',
+        message: '搜索遇到点小问题，请稍后再试',
+      });
     } finally {
       setLoading(false);
     }
