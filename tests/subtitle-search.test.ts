@@ -62,11 +62,17 @@ describe('SubtitleSearchService - TEI/Qdrant integration confidence', () => {
     expect(texts).toContain('good night');
     expect(texts).toContain('yay');
 
-    // confidence 与 score 保持一致且处于 [0,1]
+    // 置信度在服务端会对“极短且不含查询词”的目标进行轻度惩罚
+    // 因此：confidence ∈ [0,1] 且一般不大于 score；
+    // 对于较长文本（长度 > 4）默认不惩罚，confidence ≈ score
     for (const r of list) {
-      expect(r.confidence).toBeCloseTo(r.score, 6);
+      const cleanLen = (r.entry.text || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '').length;
       expect(r.confidence).toBeGreaterThanOrEqual(0);
       expect(r.confidence).toBeLessThanOrEqual(1);
+      expect(r.confidence).toBeLessThanOrEqual(r.score + 1e-6);
+      if (cleanLen > 4) {
+        expect(r.confidence).toBeCloseTo(r.score, 6);
+      }
     }
   });
 });
