@@ -14,12 +14,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 使用字幕搜索服务查找相关内容
     const searchService = SubtitleSearchService.getInstance();
-
-    // 服务应该已在启动时初始化，直接使用
-    const best = await searchService.getBestMatch(input.trim());
-
+    const list = await searchService.searchVectorTopK(input.trim(), 1);
+    const best = list.results?.[0];
     if (!best) {
       return NextResponse.json(
         { error: 'No matching content found' },

@@ -8,12 +8,8 @@ services:
     environment:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
-      - VECTOR_BACKEND=direct
-      - TEI_URL=http://tei:80
-      - QDRANT_URL=http://qdrant:6333
-      - QDRANT_COLLECTION=subtitles
-      - VECTOR_DIM=384
-      - QDRANT_DISTANCE=Cosine
+      - VECTOR_BACKEND=remote
+      - VECTOR_API_URL=http://vector-api:8000
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/status"]
@@ -42,4 +38,23 @@ services:
       - ../data/qdrant:/qdrant/storage
     restart: unless-stopped
 
-  # vector-api removed; web calls TEI/Qdrant directly
+  vector-api:
+    build:
+      context: ../services/vector-api
+    environment:
+      - TEI_URL=http://tei:80
+      - QDRANT_URL=http://qdrant:6333
+      - QDRANT_COLLECTION=subtitles
+      - VECTOR_DIM=384
+      - QDRANT_DISTANCE=Cosine
+      - TEI_BATCH=32
+      - SUBTITLES_DIR=/data/subtitles
+    ports:
+      - "8000:8000"
+    depends_on:
+      - tei
+      - qdrant
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    restart: unless-stopped
+    volumes:
+      - ../data/subtitles:/data/subtitles:ro

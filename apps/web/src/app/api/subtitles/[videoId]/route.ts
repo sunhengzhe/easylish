@@ -8,9 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ videoId: string }> }
 ) {
   try {
-    const { videoId } = await params;
-    const { searchParams } = new URL(request.url);
-    const p = parseInt(searchParams.get('p') || '1', 10) || 1;
+  const { videoId } = await params;
 
     if (!videoId) {
       return NextResponse.json(
@@ -19,20 +17,11 @@ export async function GET(
       );
     }
 
-    const searchService = SubtitleSearchService.getInstance();
-    const videoSubtitle = await searchService.getVideoSubtitle(videoId, p);
-
-    if (!videoSubtitle) {
-      return NextResponse.json(
-        { error: 'Video subtitle not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: videoSubtitle,
-    });
+    // 当前由 vector-api 管理字幕数据，未提供按视频聚合的接口
+    return NextResponse.json(
+      { error: 'Not implemented: served by vector-api' },
+      { status: 501 }
+    );
 
   } catch (error) {
     console.error('Subtitle API error:', error);

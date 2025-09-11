@@ -1,11 +1,5 @@
-import path from 'path';
-import fs from 'fs';
-import { SRTParser } from '../parsers/srt-parser';
-import { MemoryStore } from '../storage/memory-store';
 import { SearchOptions, SearchResponse, SubtitleEntry, VideoSubtitle, SearchResult } from '../types/subtitle';
 import { VectorSearchService } from './vector-search-service';
-import type { EmbeddingsProvider } from '../vector/embeddings';
-import { HashEmbeddingsProvider } from '../vector/embeddings';
 
 /**
  * 字幕搜索服务
@@ -13,14 +7,12 @@ import { HashEmbeddingsProvider } from '../vector/embeddings';
  */
 export class SubtitleSearchService {
   private static instance: SubtitleSearchService;
-  private memoryStore: MemoryStore;
   private isInitialized = false;
   private initializationPromise: Promise<void> | null = null;
   private vectorService: VectorSearchService | null = null;
   private useVector = true; // 向量检索为必选
 
   private constructor() {
-    this.memoryStore = MemoryStore.getInstance();
   }
 
   /**
@@ -57,44 +49,19 @@ export class SubtitleSearchService {
   private async doInitialize(subtitlesDir?: string): Promise<void> {
     const startTime = Date.now();
     try {
-      // 默认字幕目录，支持通过环境变量覆盖
-      const defaultSubtitlesDir = this.resolveDefaultSubtitlesDir();
-      const envDir = process.env.SUBTITLES_DIR;
-      const targetDir = subtitlesDir || envDir || defaultSubtitlesDir;
-
-      console.log(`📁 Loading subtitles from: ${targetDir}`);
-
-      // 解析所有 SRT 文件
-      const videoSubtitles = await SRTParser.parseAllSRTFiles(targetDir);
-
-      if (videoSubtitles.length === 0) {
-        console.warn('⚠️  No subtitle files found');
-        this.isInitialized = true;
-        return;
-      }
-
-      // 初始化内存存储
-      await this.memoryStore.initialize(videoSubtitles);
-
-      // 向量检索（必选）
-      console.log('🧠 Initializing vector search index...');
-      let provider: EmbeddingsProvider | undefined;
-      const providerName = (process.env.VECTOR_PROVIDER || 'xenova').toLowerCase();
+      // 向量检索（远程后端，异步 ingest 由 vector-api 完成）
+      console.log('🧠 Initializing vector search index (remote)...');
+      this.vectorService = VectorSearchService.getInstance();
+      await this.vectorService.initialize([]);
       try {
-        if (providerName === 'xenova') {
-          const { XenovaEmbeddingsProvider } = await import('../vector/embeddings-xenova');
-          provider = new XenovaEmbeddingsProvider(process.env.MODEL_ID);
+        const auto = String(process.env.VECTOR_REMOTE_INGEST_AUTOSTART || '1') !== '0';
+        if (auto) {
+          const { ingest } = await import('../vector/backend-remote');
+          const ing = await ingest(subtitlesDir || process.env.SUBTITLES_DIR);
+          console.log('🧵 Vector ingest requested:', ing);
         }
       } catch (e) {
-        console.warn('Vector provider load failed, falling back to hash provider:', e);
-      }
-      this.vectorService = VectorSearchService.getInstance(provider);
-      try {
-        await this.vectorService.initialize(videoSubtitles);
-      } catch (err) {
-        console.warn('Vector index build failed, falling back to hash provider:', err);
-        const dim = Number(process.env.VECTOR_DIM || '256');
-        await this.vectorService.rebuild(videoSubtitles, new HashEmbeddingsProvider(dim));
+        console.warn('Vector ingest trigger failed (non-fatal):', (e as Error)?.message);
       }
 
       const vectorReady = this.vectorService.isReady();
@@ -105,9 +72,7 @@ export class SubtitleSearchService {
       const duration = Date.now() - startTime;
       console.log(`✅ Subtitle search service initialized successfully in ${duration}ms`);
 
-      // 打印统计信息
-      const stats = this.memoryStore.getStats();
-      console.log(`📊 Service Stats:`, stats);
+      console.log(`📊 Service Stats: managed by vector-api`);
 
     } catch (error) {
       console.error('❌ Failed to initialize subtitle search service:', error);
@@ -118,30 +83,15 @@ export class SubtitleSearchService {
     }
   }
 
-  private resolveDefaultSubtitlesDir(): string {
-    // Try common locations based on monorepo layout and container runtime
-    const candidates = [
-      path.join(process.cwd(), 'data', 'subtitles'), // container runtime / dev if run from repo root
-      path.resolve(process.cwd(), '../../data/subtitles'), // dev: cwd = apps/web
-      path.resolve(process.cwd(), '../data/subtitles'),
-    ];
-    for (const p of candidates) {
-      try {
-        if (fs.existsSync(p)) return p;
-      } catch {}
-    }
-    // Fallback to apps/web/data/subtitles (may not exist) — clear log to aid debugging
-    const fallback = path.join(process.cwd(), 'data', 'subtitles');
-    console.warn(`[SubtitleSearchService] Could not locate data/subtitles, falling back to: ${fallback}`);
-    return fallback;
-  }
+  // 本地 SRT/MemoryStore 已移除，元数据由 vector-api 管理
 
   /**
    * 搜索字幕
    */
   async search(options: SearchOptions): Promise<SearchResponse> {
     await this.ensureInitialized();
-    return this.memoryStore.search(options);
+    // 统一走向量检索
+    return this.searchVectorTopK(options.query, options.limit ?? 20);
   }
 
   /**
@@ -149,7 +99,7 @@ export class SubtitleSearchService {
    */
   async getEntryById(id: string): Promise<SubtitleEntry | undefined> {
     await this.ensureInitialized();
-    return this.memoryStore.getEntryById(id);
+    return undefined; // 如需按ID获取，建议由 vector-api 提供专用接口
   }
 
   /**
@@ -157,7 +107,7 @@ export class SubtitleSearchService {
    */
   async getVideoSubtitle(videoId: string, episodeNumber = 1): Promise<VideoSubtitle | undefined> {
     await this.ensureInitialized();
-    return this.memoryStore.getVideoSubtitle(videoId, episodeNumber);
+    return undefined; // 建议改由 vector-api 提供
   }
 
   /**
@@ -165,7 +115,12 @@ export class SubtitleSearchService {
    */
   async getStats() {
     await this.ensureInitialized();
-    return this.memoryStore.getStats();
+    try {
+      const { vectorStatus } = await import('../vector/backend-remote');
+      return await vectorStatus();
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -269,9 +224,38 @@ export class SubtitleSearchService {
     }
 
     const top = await this.vectorService.searchTopK(query, limit);
-    const results = [] as SearchResult[];
-    for (const item of top) {
-      const entry = await this.getEntryById(item.entryId);
+    if (process.env.NODE_ENV !== 'production') {
+      const scores = Array.isArray(top) ? (top as any[]).map((t) => t?.score ?? 0) : [];
+      const confs = scores.map((s) => Math.max(0, Math.min(1, (s + 1) / 2)));
+      const max = scores.length ? Math.max(...scores) : null;
+      const min = scores.length ? Math.min(...scores) : null;
+      const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+      const cmax = confs.length ? Math.max(...confs) : null;
+      const cmin = confs.length ? Math.min(...confs) : null;
+      const cavg = confs.length ? confs.reduce((a, b) => a + b, 0) / confs.length : null;
+      console.log('[web] vector search stats', { q: query, got: scores.length, min, max, avg, cmin, cmax, cavg });
+    }
+    const results: SearchResult[] = [];
+    for (const item of top as Array<any>) {
+      let entry: SubtitleEntry | undefined;
+      const p = item.payload;
+      if (p && typeof p === 'object') {
+        // Build entry from vector-api payload
+        entry = {
+          id: item.entryId,
+          videoId: String(p.video_id ?? ''),
+          episodeNumber: Number(p.episode ?? 1),
+          sequenceNumber: Number(p.sequence ?? 0),
+          startTime: Number(p.start_ms ?? 0),
+          endTime: Number(p.end_ms ?? 0),
+          text: String(p.text ?? ''),
+          normalizedText: String(p.normalized_text ?? ''),
+          duration: Math.max(0, Number(p.end_ms ?? 0) - Number(p.start_ms ?? 0)),
+        };
+      } else {
+        // Fallback: use local store if available
+        entry = await this.getEntryById(item.entryId);
+      }
       if (entry) {
         const score = item.score; // cosine similarity [-1, 1]
         const confidence = Math.max(0, Math.min(1, (score + 1) / 2));

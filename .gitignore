@@ -13,6 +13,23 @@
 .pytest_cache/
 .next
 
+# Python bytecode
+# Match at any depth (existing rules are fine; adding ** for robustness)
+__pycache__/
+**/__pycache__/
+*.py[cod]
+**/*.py[cod]
+*$py.class
+
+# 常见 Python 构建/缓存
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
 # testing
 /coverage
 
