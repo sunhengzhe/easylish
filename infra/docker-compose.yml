@@ -14,23 +14,27 @@ services:
       vector-api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/api/status').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "fetch(''http://localhost:3000/api/status'').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
   tei:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.5
+    build:
+      context: ../data/tei
+      dockerfile: Dockerfile.tei
+    image: tei-multilingual-sbert:offline
     platform: linux/amd64
     environment:
-      - MODEL_ID=${TEI_MODEL_ID:-/data/models/multilingual-e5-small}
       - RUST_LOG=info
     ports:
       - "8080:80"
     restart: unless-stopped
-    volumes:
-      - ../data/tei:/data
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -62,7 +66,11 @@ services:
     volumes:
       - ../data/subtitles:/data/subtitles:ro
     healthcheck:
-      test: ["CMD-SHELL", "python - <<'PY'\nimport sys,urllib.request\ntry:\n  with urllib.request.urlopen('http://localhost:8000/status',timeout=5) as r:\n    sys.exit(0 if r.status==200 else 1)\nexcept Exception:\n  sys.exit(1)\nPY"]
+      test:
+        [
+          "CMD-SHELL",
+          "python - <<'PY'\nimport sys,urllib.request\ntry:\n  with urllib.request.urlopen('http://localhost:8000/status',timeout=5) as r:\n    sys.exit(0 if r.status==200 else 1)\nexcept Exception:\n  sys.exit(1)\nPY",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3

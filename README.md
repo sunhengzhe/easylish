@@ -53,7 +53,7 @@ docker compose -f infra/docker-compose.yml up --build
 Environment highlights:
 - Next.js: `VECTOR_API_URL=http://vector-api:8000` (set in `infra/docker-compose.yml`).
   - Optional: `TEI_BATCH_SIZE` (default 32), `QDRANT_UPSERT_BATCH_SIZE` (default 256)
-- TEI: `MODEL_ID=intfloat/multilingual-e5-small` (384-dim multilingual embeddings).
+- TEI: `MODEL_ID=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (384‑dim multilingual SBERT embeddings).
 - Qdrant: persistent storage under `./data/qdrant`.
 
 ### How it works

@@ -48,14 +48,14 @@ class UpsertEntry(BaseModel):
 
 class UpsertRequest(BaseModel):
     entries: List[UpsertEntry]
-    format: Optional[str] = "e5"  # e5 | raw
+    format: Optional[str] = "raw"  # e5 | raw
     collection: Optional[str] = None  # override collection per request
 
 
 class QueryRequest(BaseModel):
     query: str
     top_k: int = 10
-    format: Optional[str] = "e5"  # e5 | raw
+    format: Optional[str] = "raw"  # e5 | raw
     collection: Optional[str] = None  # override collection per request
 
 
@@ -463,4 +463,3 @@ async def ingest(req: IngestRequest, bg: BackgroundTasks):
 @app.get("/ingest/status")
 async def ingest_status():
     return JOB
-

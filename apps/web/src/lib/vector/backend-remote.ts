@@ -14,7 +14,7 @@ export async function upsertEntries(entries: SubtitleEntry[]): Promise<number> {
         video_id: e.videoId,
         episode: e.episodeNumber,
       })),
-    format: 'e5',
+    format: 'raw',
     collection: COLLECTION,
   };
   if (!payload.entries.length) return 0;
@@ -35,7 +35,7 @@ export async function search(query: string, topK: number): Promise<Array<{ entry
   const res = await fetch(`${BASE}/query`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ query, top_k: topK, format: 'e5', collection: COLLECTION }),
+    body: JSON.stringify({ query, top_k: topK, format: 'raw', collection: COLLECTION }),
   });
   if (!res.ok) {
     const t = await res.text();
