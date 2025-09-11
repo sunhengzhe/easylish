@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import type { SearchResult as ApiSearchResult } from "@/lib/types/subtitle";
+import VideoPlayer from "./components/VideoPlayer";
+import ResultNavigator from "./components/ResultNavigator";
+import SuggestionScroller from "./components/SuggestionScroller";
 
 interface VideoData {
   videoId: string;
@@ -14,6 +17,25 @@ interface VideoData {
 
 // 首页仅提供一个功能：输入台词，定位最接近的视频与时间点
 
+// 日常生活中常见的中文表达
+const suggestions = [
+  "一会吃什么？",
+  "今天天气真好",
+  "你好吗？",
+  "谢谢你的帮助",
+  "不好意思，我迟到了",
+  "这个多少钱？",
+  "我饿了",
+  "时间过得真快",
+  "你在做什么？",
+  "晚安",
+  "祝你好运",
+  "没关系",
+  "太棒了！",
+  "我觉得很有趣",
+  "你觉得怎么样？"
+];
+
 export default function Home() {
   const [inputValue, setInputValue] = useState("");
   const [showVideo, setShowVideo] = useState(false);
@@ -22,10 +44,36 @@ export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 循环切换提示词
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSuggestionIndex((prevIndex) => prevIndex + 1);
+    }, 3500); // 每3.5秒切换一次
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // 处理无缝循环
+  useEffect(() => {
+    if (suggestionIndex === suggestions.length) {
+      // 当切换到复制的第一个元素后，立即无动画跳回真正的第一个
+      const timer = setTimeout(() => {
+        setIsResetting(true);
+        setSuggestionIndex(0);
+        // 立即重置状态
+        setTimeout(() => setIsResetting(false), 50);
+      }, 700); // 等待动画完成
+
+      return () => clearTimeout(timer);
+    }
+  }, [suggestionIndex]);
 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,12 +81,14 @@ export default function Home() {
   };
 
   const handleSubmit = async () => {
-    if (inputValue.trim().length === 0) return;
+    // 如果用户没有输入内容，使用当前显示的提示词（处理循环边界）
+    const idx = suggestionIndex % suggestions.length;
+    const queryText = inputValue.trim() || suggestions[idx];
 
     setLoading(true);
     try {
       // 获取多个搜索结果
-      const response = await fetch(`/api/search?q=${encodeURIComponent(inputValue.trim())}&limit=10&strategy=vector`);
+      const response = await fetch(`/api/search?q=${encodeURIComponent(queryText)}&limit=10&strategy=vector`);
 
       if (response.ok) {
         const data = await response.json();
@@ -181,62 +231,17 @@ export default function Home() {
           <div className="flex-1 flex items-start justify-center px-4 sm:px-6 md:px-8 pt-4 pb-8">
             <div className="w-full max-w-3xl">
               {/* 视频播放器 - 保持全宽度 */}
-              <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                <iframe
-                  key={`${videoData.videoId}-${videoData.startMs}`}
-                  src={`//player.bilibili.com/player.html?bvid=${videoData.videoId}&p=${videoData.episode || 1}&autoplay=0&t=${Math.floor(videoData.startMs / 1000)}&muted=0&danmaku=0&high_quality=1`}
-                  className="absolute top-0 left-0 w-full h-full rounded-lg shadow-2xl"
-                  scrolling="no"
-                  frameBorder="0"
-                  allowFullScreen
-                />
-              </div>
+              {videoData && (
+                <VideoPlayer videoId={videoData.videoId} episode={videoData.episode} startMs={videoData.startMs} />
+              )}
 
               {/* 独立的导航控制组件 */}
-              {searchResults.length > 1 && (
-                <div className="flex items-center justify-center mt-3 mb-1">
-                  <div className="flex items-center gap-2 bg-gray-50/50 dark:bg-gray-800/50 rounded-full px-3 py-1.5 backdrop-blur-sm">
-                    {/* 左箭头 */}
-                    <button
-                      onClick={handlePrevious}
-                      disabled={currentIndex === 0}
-                      className="w-6 h-6 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-all duration-200"
-                      aria-label="上一个结果"
-                    >
-                      <svg
-                        className="w-3 h-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-
-                    {/* 计数器 */}
-                    <span className="text-xs text-gray-400 dark:text-gray-500 font-normal px-1 select-none">
-                      {currentIndex + 1} / {searchResults.length}
-                    </span>
-
-                    {/* 右箭头 */}
-                    <button
-                      onClick={handleNext}
-                      disabled={currentIndex === searchResults.length - 1}
-                      className="w-6 h-6 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-all duration-200"
-                      aria-label="下一个结果"
-                    >
-                      <svg
-                        className="w-3 h-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:text-gray-300 dark:disabled:text-gray-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              )}
+              <ResultNavigator
+                currentIndex={currentIndex}
+                total={searchResults.length}
+                onPrevious={handlePrevious}
+                onNext={handleNext}
+              />
 
               {/* 台词文本 */}
               {videoData.text && (
@@ -252,7 +257,7 @@ export default function Home() {
           {/* 底部输入区域：优化间距 */}
           <div className="px-4 sm:px-6 md:px-8 pb-8">
             <div className="max-w-3xl mx-auto">
-              <div className="flex flex-col sm:flex-row gap-2.5">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="text"
                   value={inputValue}
@@ -260,12 +265,12 @@ export default function Home() {
                   onKeyPress={handleKeyPress}
                   disabled={loading}
                   placeholder="继续输入台词定位其他片段..."
-                  className="flex-1 px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex-1 px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-300 focus:border-orange-300 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 transition-all duration-200 disabled:bg-slate-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
                 />
                 <button
                   onClick={handleSubmit}
-                  disabled={inputValue.trim().length === 0 || loading}
-                  className="px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 whitespace-nowrap text-base"
+                  disabled={loading}
+                  className="px-6 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-orange-400 focus:ring-offset-1 whitespace-nowrap text-base"
                 >
                   {loading ? '查找中...' : '查一查'}
                 </button>
@@ -298,20 +303,28 @@ export default function Home() {
 
             {/* 输入框和按钮 */}
             <div className="mb-6">
-              <div className="flex flex-col sm:flex-row gap-2.5">
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={handleInputChange}
-                  onKeyPress={handleKeyPress}
-                  disabled={loading}
-                  placeholder="输入内容，看看地道的英文台词怎么说..."
-                  className="flex-1 px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
-                />
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={inputValue}
+                    onChange={handleInputChange}
+                    onKeyPress={handleKeyPress}
+                    disabled={loading}
+                    className="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-300 focus:border-orange-300 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition-all duration-200 disabled:bg-slate-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                  {!inputValue && (
+                    <SuggestionScroller
+                      suggestions={suggestions}
+                      suggestionIndex={suggestionIndex}
+                      isResetting={isResetting}
+                    />
+                  )}
+                </div>
                 <button
                   onClick={handleSubmit}
-                  disabled={inputValue.trim().length === 0 || loading}
-                  className="px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 whitespace-nowrap text-base"
+                  disabled={loading}
+                  className="px-6 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-orange-400 focus:ring-offset-1 whitespace-nowrap text-base"
                 >
                   {loading ? '查找中...' : '查一查'}
                 </button>
