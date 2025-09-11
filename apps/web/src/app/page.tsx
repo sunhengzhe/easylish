@@ -86,7 +86,13 @@ export default function Home() {
   const handleSubmit = async () => {
     // 如果用户没有输入内容，使用当前显示的提示词（处理循环边界）
     const idx = suggestionIndex % suggestions.length;
-    const queryText = inputValue.trim() || suggestions[idx];
+    const trimmed = inputValue.trim();
+    const fallback = suggestions[idx];
+    const queryText = trimmed || fallback;
+    // 若使用了推荐关键词，自动填充到输入框，提升可见性与可控性
+    if (!trimmed) {
+      setInputValue(queryText);
+    }
 
     setLoading(true);
     try {

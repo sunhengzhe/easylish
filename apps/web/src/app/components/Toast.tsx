@@ -86,11 +86,14 @@ function ToastItem({ toast, onRequestClose }: { toast: ToastRecord; onRequestClo
     return () => clearTimeout(id);
   }, []);
 
-  const base = "pointer-events-auto min-w-[220px] max-w-[360px] rounded-lg px-4 py-3 shadow-lg ring-1 backdrop-blur transition-all duration-200 ease-out";
-  const palette = toast.type === "success" ? "bg-emerald-50/80 ring-emerald-200 text-emerald-900"
-    : toast.type === "warning" ? "bg-amber-50/80 ring-amber-200 text-amber-900"
-    : toast.type === "error" ? "bg-rose-50/80 ring-rose-200 text-rose-900"
-    : "bg-slate-50/80 ring-slate-200 text-slate-900 dark:bg-slate-800/80 dark:text-slate-100 dark:ring-slate-700";
+  const base = "pointer-events-auto min-w-[220px] max-w-[360px] rounded-lg px-4 py-3 shadow-lg ring-1 backdrop-blur transition-all duration-200 ease-out border-l-4";
+  const palette = toast.type === "success"
+    ? "bg-emerald-50/95 ring-emerald-200 text-emerald-900 border-emerald-300"
+    : toast.type === "warning"
+      ? "bg-amber-50/95 ring-amber-200 text-amber-900 border-amber-300"
+      : toast.type === "error"
+        ? "bg-rose-50/95 ring-rose-200 text-rose-900 border-rose-300"
+        : "bg-sky-50/95 ring-sky-200 text-sky-900 border-sky-300 dark:bg-slate-800/80 dark:text-slate-100 dark:ring-slate-700 dark:border-slate-600";
 
   const motion = toast.closing
     ? "opacity-0 translate-y-2"
