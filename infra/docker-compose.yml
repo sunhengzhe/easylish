@@ -2,17 +2,19 @@ services:
   easylish:
     build:
       context: ..
-      dockerfile: ../Dockerfile
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
-      - VECTOR_BACKEND=remote
       - VECTOR_API_URL=http://vector-api:8000
     restart: unless-stopped
+    depends_on:
+      vector-api:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/status"]
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/api/status').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -40,7 +42,8 @@ services:
 
   vector-api:
     build:
-      context: ../services/vector-api
+      context: ..
+      dockerfile: apps/vector-api/Dockerfile
     environment:
       - TEI_URL=http://tei:80
       - QDRANT_URL=http://qdrant:6333
@@ -58,3 +61,9 @@ services:
     restart: unless-stopped
     volumes:
       - ../data/subtitles:/data/subtitles:ro
+    healthcheck:
+      test: ["CMD-SHELL", "python - <<'PY'\nimport sys,urllib.request\ntry:\n  with urllib.request.urlopen('http://localhost:8000/status',timeout=5) as r:\n    sys.exit(0 if r.status==200 else 1)\nexcept Exception:\n  sys.exit(1)\nPY"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s

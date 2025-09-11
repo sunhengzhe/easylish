@@ -9,8 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
     && rm -rf /var/lib/apt/lists/*
 
 # Copy sources before installing to avoid stale editable installs
-COPY pyproject.toml ./
-COPY app ./app
+# Paths are relative to build context (repo root)
+COPY apps/vector-api/pyproject.toml ./
+COPY apps/vector-api/app ./app
 RUN pip install --no-cache-dir uv && uv pip install --system -e .
 
 EXPOSE 8000

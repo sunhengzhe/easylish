@@ -1,44 +1,97 @@
-Transcript tooling (Open-source)
+## Video Transcription Tool (Completely Rewritten)
 
-- Location: `scripts/`
-- Goal: Convert a video/audio file into an SRT transcript using open-source Whisper models.
+**Location**: `scripts/transcribe.mjs`
+**Goal**: Convert video/audio files to sentence-level SRT subtitles using Whisper's word-level timestamps.
 
-Mode
+### ✨ Key Features
 
-- Local Whisper: Uses the `whisper` CLI (from `pip install openai-whisper`).
+- **Smart Sentence Segmentation**: Uses word-level timestamps for accurate sentence boundaries
+- **Multiple Segmentation Strategies**: Punctuation, line length, duration, and silence gap detection
+- **Industry Best Practices**: No complex post-processing, leverages Whisper's native capabilities
+- **Configurable Parameters**: Fine-tune segmentation behavior
 
-Requirements
+### 📋 Requirements
 
-- Node.js 18+.
-- `whisper` CLI available on PATH; recommended `ffmpeg` for better codec support.
+- **Node.js 18+**
+- **Whisper CLI**: `pip install openai-whisper`
+- **FFmpeg** (recommended): `brew install ffmpeg` (macOS)
 
-Setup
+### 🚀 Quick Setup
 
+```bash
+# Install Whisper
 pip install openai-whisper
-# macOS example for ffmpeg
+
+# Install FFmpeg (macOS)
 brew install ffmpeg
 
-Usage
+# Test the script
+node scripts/transcribe.mjs --help
+```
 
-pnpm transcribe:local /absolute/path/to/video.mp4 \
-  --out data/subtitles/356012463-1-192.srt \
-  --language zh \
-  --model medium \
-  --one_sentence
+### 💡 Usage
 
-Notes
+**Basic usage:**
 
-- If `--out` is omitted, output goes to `data/subtitles/<basename>.srt`.
-- `whisper` writes an SRT in the output directory; the script renames it to your `--out` when specified.
-- Common models: `tiny`, `base`, `small`, `medium`, `large` (append `.en` for English-optimized variants).
+```bash
+pnpm transcribe:local /path/to/video.mp4 --language en
+```
 
-Example (your file)
+**Advanced usage:**
 
-pnpm transcribe:local \
-  /Users/sunhengzhe/Downloads/356012463-1-192.mp4 \
-  --out data/subtitles/356012463-1-192.srt \
-  --language zh \
-  --one_sentence
+```bash
+pnpm transcribe:local /path/to/video.mp4 \
+  --language en \
+  --model base \
+  --out data/subtitles/my-video.srt \
+  --max-line-width 60 \
+  --max-line-duration 5 \
+  --min-silence-gap 0.5
+```
+
+### ⚙️ Parameters
+
+| Parameter             | Description                    | Default                     | Example                            |
+| --------------------- | ------------------------------ | --------------------------- | ---------------------------------- |
+| `--language`          | Language code                  | auto-detect                 | `en`, `zh`, `es`                   |
+| `--model`             | Whisper model size             | `base`                      | `tiny`, `small`, `medium`, `large` |
+| `--out`               | Output SRT file                | `data/subtitles/<name>.srt` | `my-subtitles.srt`                 |
+| `--max-line-width`    | Max characters per line        | `50`                        | `60`                               |
+| `--max-line-duration` | Max seconds per subtitle       | `6`                         | `5`                                |
+| `--min-silence-gap`   | Min silence for sentence break | `0.3`                       | `0.5`                              |
+
+### 🎯 How It Works
+
+1. **Word-Level Timestamps**: Uses `--word_timestamps True` to get precise timing
+2. **JSON Processing**: Processes Whisper's rich JSON output instead of raw SRT
+3. **Smart Segmentation**: Combines punctuation, length, duration, and silence detection
+4. **Clean Output**: Generates clean, sentence-level SRT files
+
+### ✅ Example Output
+
+**Before** (long paragraphs):
+
+```
+1
+00:00:00,000 --> 00:00:20,580
+Hello what can I do for you? Hello I'd like to buy some notebooks. What kind of notebooks would you like?
+```
+
+**After** (sentence-level):
+
+```
+1
+00:00:00,000 --> 00:00:03,240
+Hello what can I do for you?
+
+2
+00:00:03,240 --> 00:00:06,180
+Hello I'd like to buy some notebooks.
+
+3
+00:00:06,180 --> 00:00:09,420
+What kind of notebooks would you like?
+```
 
 Offline models (avoid network timeouts)
 
@@ -47,9 +100,9 @@ Offline models (avoid network timeouts)
 - Put them into a folder, e.g. `data/models/whisper`, then run with:
 
 pnpm transcribe:local \
-  /path/to/file.mp4 \
-  --model tiny \
-  --model_dir data/models/whisper
+ /path/to/file.mp4 \
+ --model tiny \
+ --model_dir data/models/whisper
 
 Tips
 

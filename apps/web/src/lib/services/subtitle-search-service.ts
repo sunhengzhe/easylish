@@ -284,18 +284,8 @@ export class SubtitleSearchService {
    */
   async getPopularTerms(limit = 20): Promise<Array<{ term: string; frequency: number }>> {
     await this.ensureInitialized();
-
-    const stats = this.memoryStore.getStats();
-    console.log(`Analyzing ${stats.totalEntries} entries for popular terms...`);
-
-    // 这里可以实现更复杂的词频分析
-    // 目前返回一个示例结果
-    return [
-      { term: 'love', frequency: 100 },
-      { term: 'hello', frequency: 85 },
-      { term: 'good morning', frequency: 70 },
-      { term: 'thank you', frequency: 65 },
-      { term: 'how are you', frequency: 60 },
-    ].slice(0, limit);
+    // 本地 MemoryStore 已移除，热门词建议改由 vector-api 侧统计
+    // 这里返回空数组占位，避免阻断构建
+    return [];
   }
 }

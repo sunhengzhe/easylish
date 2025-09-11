@@ -51,7 +51,7 @@ docker compose -f infra/docker-compose.yml up --build
 ```
 
 Environment highlights:
-- Next.js: `VECTOR_BACKEND=remote`, `VECTOR_API_URL=http://vector-api:8000` (set in `infra/docker-compose.yml`).
+- Next.js: `VECTOR_API_URL=http://vector-api:8000` (set in `infra/docker-compose.yml`).
   - Optional: `TEI_BATCH_SIZE` (default 32), `QDRANT_UPSERT_BATCH_SIZE` (default 256)
 - TEI: `MODEL_ID=intfloat/multilingual-e5-small` (384-dim multilingual embeddings).
 - Qdrant: persistent storage under `./data/qdrant`.
@@ -62,5 +62,14 @@ Environment highlights:
 - Vector search (`strategy=vector`) calls the vector API `/query`, which embeds the query via TEI and searches Qdrant.
 
 ### Switching backends
-- Remote (default in compose): `VECTOR_BACKEND=remote`
-- In-memory (for dev only): unset or `VECTOR_BACKEND=memory` (hash/Xenova fallback)
+- Remote/search via vector-api (default in compose)
+- 本地内存后端已不再推荐；如需改造请自行添加开关
+
+## 容器组织说明
+
+- Web (Next.js): 根目录 `Dockerfile` 仅构建 `apps/web`（monorepo 需要访问根部 workspace 元数据）。
+- Vector API (FastAPI): `apps/vector-api/Dockerfile`。字幕数据通过卷挂载到 `/data/subtitles`，不再烘入镜像。
+- TEI: 使用官方镜像 `ghcr.io/huggingface/text-embeddings-inference:cpu-1.5`，通过卷挂载模型数据。
+- Qdrant: 使用官方镜像，数据卷 `./data/qdrant`。
+
+在 `infra/docker-compose.yml` 中将以上四个服务编排在一起，并为 web、vector-api 配置健康检查与依赖顺序。

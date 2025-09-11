@@ -463,3 +463,4 @@ async def ingest(req: IngestRequest, bg: BackgroundTasks):
 @app.get("/ingest/status")
 async def ingest_status():
     return JOB
+

@@ -163,28 +163,28 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       {showVideo && videoData ? (
-        // 视频播放模式：视频为主体，其他元素为配角
+        // 视频播放模式：平衡布局，logo明显可见
         <div className="min-h-screen flex flex-col">
-          {/* 顶部区域：Logo 在顶部中央 */}
-          <div className="flex justify-center p-2 sm:p-3">
+          {/* 顶部区域：Logo */}
+          <div className="flex justify-center pt-6 pb-4">
             <img
               src="/easylish-logo.png"
               alt="Easylish Logo"
-              width={120}
-              height={48}
+              width={200}
+              height={80}
               className="object-contain"
-              style={{ width: 'auto', height: 'auto', maxWidth: '120px', maxHeight: '48px' }}
+              style={{ width: 'auto', height: 'auto', maxWidth: '200px', maxHeight: '80px' }}
             />
           </div>
 
-          {/* 主要视频区域：占据中央位置 */}
-          <div className="flex-1 flex items-center justify-center px-4 sm:px-6 md:px-8 py-3">
+          {/* 主要视频区域：适中尺寸，不占满屏幕 */}
+          <div className="flex-1 flex items-start justify-center px-4 sm:px-6 md:px-8 pt-4 pb-8">
             <div className="w-full max-w-3xl">
               {/* 视频播放器 - 保持全宽度 */}
               <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                 <iframe
                   key={`${videoData.videoId}-${videoData.startMs}`}
-                  src={`//player.bilibili.com/player.html?bvid=${videoData.videoId}&p=${videoData.episode || 1}&autoplay=1&t=${Math.floor(videoData.startMs / 1000)}&muted=0&danmaku=0&high_quality=1`}
+                  src={`//player.bilibili.com/player.html?bvid=${videoData.videoId}&p=${videoData.episode || 1}&autoplay=0&t=${Math.floor(videoData.startMs / 1000)}&muted=0&danmaku=0&high_quality=1`}
                   className="absolute top-0 left-0 w-full h-full rounded-lg shadow-2xl"
                   scrolling="no"
                   frameBorder="0"
@@ -249,10 +249,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 底部输入区域：紧凑设计 */}
-          <div className="px-4 sm:px-6 md:px-8 pb-6">
+          {/* 底部输入区域：优化间距 */}
+          <div className="px-4 sm:px-6 md:px-8 pb-8">
             <div className="max-w-3xl mx-auto">
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-2.5">
                 <input
                   type="text"
                   value={inputValue}
@@ -265,9 +265,9 @@ export default function Home() {
                 <button
                   onClick={handleSubmit}
                   disabled={inputValue.trim().length === 0 || loading}
-                  className="px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 whitespace-nowrap"
+                  className="px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 whitespace-nowrap text-base"
                 >
-                  {loading ? '查询中...' : '查询'}
+                  {loading ? '查找中...' : '查一查'}
                 </button>
               </div>
             </div>
@@ -278,7 +278,7 @@ export default function Home() {
         <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
           <div className="w-full max-w-2xl mx-auto text-center">
             {/* Logo */}
-            <div className="mb-12">
+            <div className="mb-2">
               <img
                 src="/easylish-logo.png"
                 alt="Easylish Logo"
@@ -289,9 +289,16 @@ export default function Home() {
               />
             </div>
 
+            {/* Slogan */}
+            <div className="mb-10">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                在英文视频中学习地道的英文表达!
+              </p>
+            </div>
+
             {/* 输入框和按钮 */}
             <div className="mb-6">
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-2.5">
                 <input
                   type="text"
                   value={inputValue}
@@ -299,19 +306,16 @@ export default function Home() {
                   onKeyPress={handleKeyPress}
                   disabled={loading}
                   placeholder="输入内容，看看地道的英文台词怎么说..."
-                  className="flex-1 px-6 py-4 text-lg border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex-1 px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200 disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
                 />
                 <button
                   onClick={handleSubmit}
                   disabled={inputValue.trim().length === 0 || loading}
-                  className="px-8 py-4 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 whitespace-nowrap text-lg"
+                  className="px-6 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 whitespace-nowrap text-base"
                 >
-                  {loading ? '查询中...' : '查询'}
+                  {loading ? '查找中...' : '查一查'}
                 </button>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-                根据输入台词查询到最匹配的地道英文
-              </p>
             </div>
           </div>
         </div>
