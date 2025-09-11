@@ -49,12 +49,14 @@ class UpsertEntry(BaseModel):
 class UpsertRequest(BaseModel):
     entries: List[UpsertEntry]
     format: Optional[str] = "e5"  # e5 | raw
+    collection: Optional[str] = None  # override collection per request
 
 
 class QueryRequest(BaseModel):
     query: str
     top_k: int = 10
     format: Optional[str] = "e5"  # e5 | raw
+    collection: Optional[str] = None  # override collection per request
 
 
 class QueryResponseItem(BaseModel):
@@ -189,18 +191,39 @@ async def upsert(req: UpsertRequest):
     if len(vectors) != len(entries):
         raise HTTPException(status_code=502, detail="Embedding length mismatch")
     c = qdrant()
-    await ensure_collection(c)
+    coll = (req.collection or COLLECTION)
+    # ensure target collection exists
+    try:
+        await c.get_collection(coll)
+    except Exception:
+        await c.create_collection(
+            collection_name=coll,
+            vectors_config=qm.VectorParams(
+                size=VECTOR_SIZE,
+                distance=getattr(qm.Distance, DISTANCE, qm.Distance.COSINE),
+            ),
+        )
     points: List[qm.PointStruct] = []
     for e, v in zip(entries, vectors):
+        # include text payload to allow clients/tests to reconstruct entries from search hits
+        try:
+            norm = _normalize_text(e.text)
+        except Exception:
+            norm = e.text.strip().lower()
         points.append(
             qm.PointStruct(
                 id=_safe_point_id(e.id),
                 vector=v,
-                payload={"video_id": e.video_id, "episode": e.episode},
+                payload={
+                    "video_id": e.video_id,
+                    "episode": e.episode,
+                    "text": e.text,
+                    "normalized_text": norm,
+                },
             )
         )
-    await c.upsert(COLLECTION, points=points)
-    print(f"[vector-api] upsert entries={len(entries)} points={len(points)}")
+    await c.upsert(coll, points=points)
+    print(f"[vector-api] upsert entries={len(entries)} points={len(points)} collection={coll}")
     return {"upserted": len(points)}
 
 
@@ -211,15 +234,16 @@ async def query(req: QueryRequest) -> List[QueryResponseItem]:
     kind = "e5_query" if (req.format or "e5") == "e5" else "raw"
     qvec = (await tei_embed([_fmt(req.query, kind)]))[0]
     c = qdrant()
+    coll = (req.collection or COLLECTION)
     await ensure_collection(c)
     res = await c.search(
-        collection_name=COLLECTION,
+        collection_name=coll,
         query_vector=qvec,
         limit=max(1, min(100, req.top_k)),
         with_payload=True,
     )
     print(
-        f"[vector-api] query top_k={req.top_k} got={len(res)} top_score={(res[0].score if res else None)}"
+        f"[vector-api] query top_k={req.top_k} got={len(res)} top_score={(res[0].score if res else None)} collection={coll}"
     )
     return [
         QueryResponseItem(
@@ -229,6 +253,70 @@ async def query(req: QueryRequest) -> List[QueryResponseItem]:
         )
         for p in res
     ]
+
+# ---------------- Maintenance ----------------
+
+class DeleteRequest(BaseModel):
+    collection: Optional[str] = None
+    video_ids: Optional[List[str]] = None
+    video_id_prefix: Optional[str] = None
+
+
+@app.post("/delete")
+async def delete_points(req: DeleteRequest):
+    c = qdrant()
+    coll = (req.collection or COLLECTION)
+    try:
+        await c.get_collection(coll)
+    except Exception:
+        return {"deleted": 0, "collection": coll}
+
+    deleted = 0
+    # delete by explicit video_ids
+    if req.video_ids:
+        flt = qm.Filter(
+            must=[
+                qm.FieldCondition(
+                    key="video_id",
+                    match=qm.MatchAny(any=req.video_ids),
+                )
+            ]
+        )
+        await c.delete(collection_name=coll, points_selector=qm.FilterSelector(filter=flt))
+        # Qdrant delete is async; we cannot easily know exact count here
+        return {"deleted": None, "collection": coll, "by": "video_ids", "count_unknown": True}
+
+    # delete by prefix by scanning
+    if req.video_id_prefix:
+        next_page = None
+        batch_ids: List[Any] = []
+        while True:
+            sc, next_page = await c.scroll(
+                collection_name=coll,
+                with_payload=True,
+                limit=1024,
+                offset=next_page,
+            )
+            for pt in sc:
+                try:
+                    p = pt.payload or {}
+                    vid = str(p.get("video_id") or "")
+                    if vid.startswith(req.video_id_prefix):
+                        batch_ids.append(pt.id)
+                        if len(batch_ids) >= 512:
+                            await c.delete(collection_name=coll, points_selector=qm.PointIdsList(points=batch_ids))
+                            deleted += len(batch_ids)
+                            batch_ids = []
+                except Exception:
+                    continue
+            if not next_page:
+                break
+        if batch_ids:
+            await c.delete(collection_name=coll, points_selector=qm.PointIdsList(points=batch_ids))
+            deleted += len(batch_ids)
+        return {"deleted": deleted, "collection": coll, "by": "prefix"}
+
+    return {"deleted": 0, "collection": coll}
 
 # ---------------- Ingestion (SRT) ----------------
 
