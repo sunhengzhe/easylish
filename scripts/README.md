@@ -119,3 +119,23 @@ Troubleshooting
 
 - `whisper` not found: install via `pip install openai-whisper`.
 - `ffmpeg` not found: install via your OS package manager (recommended).
+
+## Bilibili Batch Downloader + Transcriber
+
+Location: `scripts/bili-batch.mjs`
+
+Downloads a Bilibili video series by page range using `you-get`, runs transcription via `pnpm transcribe:local`, and deletes the video files to save disk space.
+
+Usage:
+
+```
+pnpm bili:range -- --videoId BV1ji421Y7y7 --range 2-10 --language en
+```
+
+Requirements:
+- Python `you-get` CLI in PATH. If missing, install with: `uv pip install you-get`.
+- Whisper CLI in PATH (used by `scripts/transcribe.mjs`). If missing: `uv pip install openai-whisper`.
+
+Notes:
+- Videos are saved temporarily in `data/video/` and removed after transcription.
+- SRT files are saved to `data/subtitles/` by the transcription script.

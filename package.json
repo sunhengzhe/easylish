@@ -14,7 +14,8 @@
     "test": "vitest run --pool=forks --isolate=false",
     "test:watch": "vitest --pool=forks --isolate=false",
     "coverage": "vitest run --coverage --pool=forks --isolate=false",
-    "transcribe:local": "node scripts/transcribe.mjs"
+    "transcribe:local": "node scripts/transcribe.mjs",
+    "bili:range": "node scripts/bili-batch.mjs"
   },
   "devDependencies": {
     "vitest": "^2.0.0",
@@ -22,4 +23,3 @@
     "typescript": "^5"
   }
 }
-
