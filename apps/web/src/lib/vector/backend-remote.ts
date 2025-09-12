@@ -2,6 +2,8 @@ import type { SubtitleEntry } from '@/lib/types/subtitle';
 
 const BASE = process.env.VECTOR_API_URL || 'http://localhost:8000';
 const COLLECTION = process.env.VECTOR_COLLECTION;
+const UPSERT_FORMAT = process.env.VECTOR_UPSERT_FORMAT || 'raw'; // 'raw' | 'e5'
+const QUERY_FORMAT = process.env.VECTOR_QUERY_FORMAT || 'raw';   // 'raw' | 'e5'
 
 export async function upsertEntries(entries: SubtitleEntry[]): Promise<number> {
   // Only send non-empty texts; server will also validate
@@ -14,7 +16,7 @@ export async function upsertEntries(entries: SubtitleEntry[]): Promise<number> {
         video_id: e.videoId,
         episode: e.episodeNumber,
       })),
-    format: 'raw',
+    format: UPSERT_FORMAT,
     collection: COLLECTION,
   };
   if (!payload.entries.length) return 0;
@@ -35,7 +37,7 @@ export async function search(query: string, topK: number): Promise<Array<{ entry
   const res = await fetch(`${BASE}/query`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ query, top_k: topK, format: 'raw', collection: COLLECTION }),
+    body: JSON.stringify({ query, top_k: topK, format: QUERY_FORMAT, collection: COLLECTION }),
   });
   if (!res.ok) {
     const t = await res.text();

@@ -89,22 +89,10 @@ export default function Home() {
         const data = await response.json();
         const results = data.data.results as ApiSearchResult[];
 
-        // 过滤高置信度结果（优先使用归一化置信度），对极短文本加更严格门槛
-        const maxScore = results.length > 0 ? Math.max(...results.map(r => r.score)) : 0;
-        const baseThreshold = Number(process.env.NEXT_PUBLIC_MIN_CONFIDENCE || 0.65);
-        const highQualityResults = results.filter(result => {
-          const text = (result.entry.text || '').toLowerCase();
-          const cleanLen = text.replace(/[^\p{L}\p{N}]+/gu, '').length;
-          const isVeryShort = cleanLen <= 3; // 如 "ok", "bye", "yay"
-          if (typeof result.confidence === 'number') {
-            const thr = isVeryShort ? Math.max(baseThreshold, 0.85) : baseThreshold;
-            return result.confidence >= thr;
-          }
-          // 关键词检索回退：按相对阈值
-          const rel = maxScore > 0 ? (result.score / maxScore) : 1;
-          const thrRel = isVeryShort ? 0.95 : 0.6;
-          return rel >= thrRel;
-        });
+        // 过滤结果：基于分数的简单阈值，不再使用 confidence
+        // Only show items with score >= threshold (default 0.8)
+        const baseScore = Number(process.env.NEXT_PUBLIC_MIN_SCORE || 0.8);
+        const highQualityResults = results.filter(r => (r.score ?? 0) >= baseScore);
 
         if (highQualityResults.length > 0) {
           setSearchResults(highQualityResults);
@@ -118,7 +106,7 @@ export default function Home() {
             startMs: firstResult.entry.startTime,
             text: firstResult.entry.text,
             score: firstResult.score,
-            confidence: firstResult.confidence,
+            confidence: undefined,
           };
 
           // 调试信息输出到控制台
@@ -129,7 +117,7 @@ export default function Home() {
             startTime: `${Math.floor(videoData.startMs / 1000)}秒`,
             matchedText: videoData.text,
             matchScore: videoData.score?.toFixed(2),
-            confidence: (firstResult.confidence ?? 0).toFixed(2)
+            confidence: undefined
           });
 
           setVideoData(videoData);
@@ -182,7 +170,7 @@ export default function Home() {
       startMs: result.entry.startTime,
       text: result.entry.text,
       score: result.score,
-      confidence: result.confidence,
+      confidence: undefined,
     };
 
     console.log('🎯 切换结果:', {
@@ -192,7 +180,7 @@ export default function Home() {
       startTime: `${Math.floor(videoData.startMs / 1000)}秒`,
       matchedText: videoData.text,
       matchScore: videoData.score?.toFixed(2),
-      confidence: (result.confidence ?? 0).toFixed(2)
+      confidence: undefined
     });
 
     setVideoData(videoData);
@@ -301,7 +289,7 @@ export default function Home() {
             {/* Slogan */}
             <div className="mb-10">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                在英文视频中学习地道的英文表达!
+                在英文视频中学习地道的英文表达 ✨
               </p>
             </div>
 

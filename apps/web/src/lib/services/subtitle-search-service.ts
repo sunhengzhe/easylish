@@ -226,14 +226,10 @@ export class SubtitleSearchService {
     const top = await this.vectorService.searchTopK(query, limit);
     if (process.env.NODE_ENV !== 'production') {
       const scores = Array.isArray(top) ? (top as any[]).map((t) => t?.score ?? 0) : [];
-      const confs = scores.map((s) => Math.max(0, Math.min(1, s)));
       const max = scores.length ? Math.max(...scores) : null;
       const min = scores.length ? Math.min(...scores) : null;
       const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
-      const cmax = confs.length ? Math.max(...confs) : null;
-      const cmin = confs.length ? Math.min(...confs) : null;
-      const cavg = confs.length ? confs.reduce((a, b) => a + b, 0) / confs.length : null;
-      console.log('[web] vector search stats', { q: query, got: scores.length, min, max, avg, cmin, cmax, cavg });
+      console.log('[web] vector search stats', { q: query, got: scores.length, min, max, avg });
     }
     const results: SearchResult[] = [];
     const qnorm = (query || '').toLowerCase().replace(/[^\p{L}\p{N}\s]+/gu, ' ').trim();
@@ -259,17 +255,7 @@ export class SubtitleSearchService {
       }
       if (entry) {
         const score = item.score; // Qdrant cosine similarity in [0, 1]
-        // Heuristic calibration: penalize extremely short targets unless they contain the query
-        const text = (entry.normalizedText || entry.text || '').toLowerCase();
-        const clean = text.replace(/[^\p{L}\p{N}]+/gu, '');
-        let penalty = 1.0;
-        const contains = qnorm && (text.includes(qnorm) || (entry.text || '').toLowerCase().includes(qnorm));
-        if (!contains) {
-          if (clean.length <= 2) penalty *= 0.35; // single-word/very short like "hi", "ok", "bye"
-          else if (clean.length <= 4) penalty *= 0.7;
-        }
-        const confidence = Math.max(0, Math.min(1, score * penalty));
-        results.push({ entry, score, confidence, source: 'vector' });
+        results.push({ entry, score, source: 'vector' });
       }
     }
     return {

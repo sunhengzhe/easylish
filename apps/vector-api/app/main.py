@@ -399,7 +399,8 @@ async def _ingest_dir(dir_path: str):
                         },
                     }
                 )
-                texts_batch.append(f"passage: {norm if norm else text}")
+                # Use raw text for embeddings to match query format and non-E5 models
+                texts_batch.append(norm if norm else text)
 
             state = "seq"
             for ln in lines + [""]:

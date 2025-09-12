@@ -59,6 +59,7 @@ export async function embedWithType(
     }
   } catch {
     // ignore and fallback
+    console.error('TEI embedWithType failed, falling back to prefixing');
   }
   const prefix = inputType === 'query' ? 'query: ' : 'passage: ';
   return embed(inputs.map((t) => `${prefix}${t}`), base);

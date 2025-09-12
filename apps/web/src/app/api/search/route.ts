@@ -42,14 +42,10 @@ export async function GET(request: NextRequest) {
     if (process.env.NODE_ENV !== 'production') {
       const list = (results as any)?.results ?? [];
       const scores = list.map((r: any) => r?.score ?? 0);
-      const confs = list.map((r: any) => r?.confidence ?? 0);
       const max = scores.length ? Math.max(...scores) : null;
       const min = scores.length ? Math.min(...scores) : null;
       const avg = scores.length ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : null;
-      const cmax = confs.length ? Math.max(...confs) : null;
-      const cmin = confs.length ? Math.min(...confs) : null;
-      const cavg = confs.length ? confs.reduce((a: number, b: number) => a + b, 0) / confs.length : null;
-      console.log('[api/search]', { strategy, q: options.query, got: list.length, min, max, avg, cmin, cmax, cavg });
+      console.log('[api/search]', { strategy, q: options.query, got: list.length, min, max, avg });
     }
 
     return NextResponse.json({

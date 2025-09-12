@@ -41,4 +41,23 @@ describe('TEI embedding similarity', () => {
     }
     expect(simPos).toBeGreaterThan(simNeg + 0.2);
   });
+
+  it('Related pair ranks above unrelated by margin', async () => {
+    if (!available) return expect(true).toBe(true);
+
+    // Anchor on the same CN sentence to reduce global anisotropy effects
+    const anchor = '头脑风暴';
+    const positive = 'Brainstorming';
+    const negative = 'I\'m Danielle.';
+    const [va, vp, vn] = await embedPassage([anchor, positive, negative]);
+    const simPos = cosineSim(va, vp);
+    const simNeg = cosineSim(va, vn);
+
+    // Assertions: valid ranges and a relative margin
+    for (const s of [simPos, simNeg]) {
+      expect(s).toBeGreaterThanOrEqual(-1);
+      expect(s).toBeLessThanOrEqual(1);
+    }
+    expect(simPos).toBeGreaterThan(simNeg + 0.2);
+  });
 });
