@@ -1,2 +1,4 @@
 tei/
 qdrant/
+subtitles/*.srt
+subtitles/**/*.srt

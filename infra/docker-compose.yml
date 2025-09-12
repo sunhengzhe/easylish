@@ -25,13 +25,13 @@ services:
       start_period: 40s
 
   tei:
-    build:
-      context: ../data/tei
-      dockerfile: Dockerfile.tei
-    image: tei-multilingual-sbert:offline
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8
     platform: linux/amd64
     environment:
       - RUST_LOG=info
+      - MODEL_ID=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+    volumes:
+      - ../data/tei:/data
     ports:
       - "8080:80"
     restart: unless-stopped
