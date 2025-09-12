@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     // 兼容：用向量检索的 payload 文本生成建议（简单截断/去重）
     const vector = await searchService.searchVectorTopK(query, limit * 2);
     const texts: string[] = (vector.results || [])
-      .map((r: any) => String(r.entry?.text || ''))
+      .map((r) => String(r.entry?.text || ''))
       .filter(Boolean);
     const uniq = Array.from(new Set(texts));
     const suggestions = uniq.slice(0, limit);

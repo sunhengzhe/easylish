@@ -45,7 +45,7 @@ export async function search(query: string, topK: number): Promise<Array<{ entry
   }
   const data = (await res.json()) as Array<{ entryId: string; score: number }>;
   if (process.env.NODE_ENV !== 'production') {
-    const scores = Array.isArray(data) ? data.map((d: any) => d?.score ?? 0) : [];
+    const scores = Array.isArray(data) ? data.map((d) => d?.score ?? 0) : [];
     const max = scores.length ? Math.max(...scores) : null;
     const min = scores.length ? Math.min(...scores) : null;
     const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;

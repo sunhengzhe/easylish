@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { SearchResult as ApiSearchResult } from "@/lib/types/subtitle";
 import VideoPlayer from "./components/VideoPlayer";
 import ResultNavigator from "./components/ResultNavigator";
-import SuggestionScroller from "./components/SuggestionScroller";
+import SearchInput from "./components/SearchInput";
 import { useToast } from "./components/Toast";
 
 interface VideoData {
@@ -21,7 +21,12 @@ interface VideoData {
 // 日常生活中常见的中文表达
 const suggestions = [
   "求知若饥，虚心若愚",
-  "相信美好的事情即将发生"
+  "相信美好的事情即将发生",
+  "对的时间，对的地点",
+  "The 24 solar terms",
+  "Guess how much I love you",
+  "小鸭子去游泳",
+  "小猪佩奇"
 ];
 
 export default function Home() {
@@ -38,6 +43,25 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
+
+    // 监听 hash 变化
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash === '' || hash === '#') {
+        // 返回首页状态
+        setShowVideo(false);
+        setVideoData(null);
+        setSearchResults([]);
+        setCurrentIndex(0);
+        setInputValue("");
+      }
+    };
+
+    // 初始化时检查 hash
+    handleHashChange();
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   // 循环切换提示词
@@ -64,6 +88,11 @@ export default function Home() {
     }
   }, [suggestionIndex]);
 
+
+  // 返回首页
+  const goToHome = useCallback(() => {
+    window.location.hash = '';
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
@@ -122,6 +151,9 @@ export default function Home() {
 
           setVideoData(videoData);
           setShowVideo(true);
+
+          // 设置 hash 表示进入搜索结果状态
+          window.location.hash = 'search';
         } else {
           showToast({
             type: 'info',
@@ -207,8 +239,18 @@ export default function Home() {
       {showVideo && videoData ? (
         // 视频播放模式：平衡布局，logo明显可见
         <div className="min-h-screen flex flex-col">
-          {/* 顶部区域：Logo */}
-          <div className="flex justify-center pt-6 pb-4">
+          {/* 顶部区域：Logo 和返回按钮 */}
+          <div className="flex justify-between items-center pt-6 pb-4 px-4 sm:px-6 md:px-8">
+            <button
+              onClick={goToHome}
+              className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors duration-200"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span className="text-sm">返回</span>
+            </button>
+
             <img
               src="/easylish-logo.png"
               alt="Easylish Logo"
@@ -217,6 +259,8 @@ export default function Home() {
               className="object-contain"
               style={{ width: 'auto', height: 'auto', maxWidth: '200px', maxHeight: '80px' }}
             />
+
+            <div className="w-16"></div> {/* 占位符保持居中 */}
           </div>
 
           {/* 主要视频区域：适中尺寸，不占满屏幕 */}
@@ -249,24 +293,18 @@ export default function Home() {
           {/* 底部输入区域：优化间距 */}
           <div className="px-4 sm:px-6 md:px-8 pb-8">
             <div className="max-w-3xl mx-auto">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={handleInputChange}
-                  onKeyPress={handleKeyPress}
-                  disabled={loading}
-                  placeholder="继续输入台词定位其他片段..."
-                  className="flex-1 px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-300 focus:border-orange-300 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 transition-all duration-200 disabled:bg-slate-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-                />
-                <button
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="px-6 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-orange-400 focus:ring-offset-1 whitespace-nowrap text-base"
-                >
-                  {loading ? '查找中...' : '查一查'}
-                </button>
-              </div>
+              <SearchInput
+                value={inputValue}
+                onChange={handleInputChange}
+                onKeyPress={handleKeyPress}
+                onSubmit={handleSubmit}
+                loading={loading}
+                placeholder=""
+                suggestions={suggestions}
+                suggestionIndex={suggestionIndex}
+                isResetting={isResetting}
+                showSuggestions={true}
+              />
             </div>
           </div>
         </div>
@@ -295,32 +333,18 @@ export default function Home() {
 
             {/* 输入框和按钮 */}
             <div className="mb-6">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    value={inputValue}
-                    onChange={handleInputChange}
-                    onKeyPress={handleKeyPress}
-                    disabled={loading}
-                    className="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-300 focus:border-orange-300 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition-all duration-200 disabled:bg-slate-100 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  />
-                  {!inputValue && (
-                    <SuggestionScroller
-                      suggestions={suggestions}
-                      suggestionIndex={suggestionIndex}
-                      isResetting={isResetting}
-                    />
-                  )}
-                </div>
-                <button
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="px-6 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-orange-400 focus:ring-offset-1 whitespace-nowrap text-base"
-                >
-                  {loading ? '查找中...' : '查一查'}
-                </button>
-              </div>
+              <SearchInput
+                value={inputValue}
+                onChange={handleInputChange}
+                onKeyPress={handleKeyPress}
+                onSubmit={handleSubmit}
+                loading={loading}
+                placeholder=""
+                suggestions={suggestions}
+                suggestionIndex={suggestionIndex}
+                isResetting={isResetting}
+                showSuggestions={true}
+              />
             </div>
           </div>
         </div>

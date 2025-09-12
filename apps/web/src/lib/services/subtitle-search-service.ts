@@ -217,15 +217,14 @@ export class SubtitleSearchService {
 
     const top = await this.vectorService.searchTopK(query, limit);
     if (process.env.NODE_ENV !== 'production') {
-      const scores = Array.isArray(top) ? (top as any[]).map((t) => t?.score ?? 0) : [];
+      const scores = Array.isArray(top) ? top.map((t) => t?.score ?? 0) : [];
       const max = scores.length ? Math.max(...scores) : null;
       const min = scores.length ? Math.min(...scores) : null;
       const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
       console.log('[web] vector search stats', { q: query, got: scores.length, min, max, avg });
     }
     const results: SearchResult[] = [];
-    const qnorm = (query || '').toLowerCase().replace(/[^\p{L}\p{N}\s]+/gu, ' ').trim();
-    for (const item of top as Array<any>) {
+    for (const item of top) {
       let entry: SubtitleEntry | undefined;
       const p = item.payload;
       if (p && typeof p === 'object') {
