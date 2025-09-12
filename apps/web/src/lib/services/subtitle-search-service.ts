@@ -10,7 +10,6 @@ export class SubtitleSearchService {
   private isInitialized = false;
   private initializationPromise: Promise<void> | null = null;
   private vectorService: VectorSearchService | null = null;
-  private useVector = true; // 向量检索为必选
 
   private constructor() {
   }
@@ -85,14 +84,6 @@ export class SubtitleSearchService {
 
   // 本地 SRT/MemoryStore 已移除，元数据由 vector-api 管理
 
-  /**
-   * 搜索字幕
-   */
-  async search(options: SearchOptions): Promise<SearchResponse> {
-    await this.ensureInitialized();
-    // 统一走向量检索
-    return this.searchVectorTopK(options.query, options.limit ?? 20);
-  }
 
   /**
    * 根据ID获取字幕条目
@@ -160,10 +151,7 @@ export class SubtitleSearchService {
     }
 
     // 简单的建议实现：搜索匹配的文本片段
-    const searchResult = await this.search({
-      query: query.trim(),
-      limit: limit * 2, // 多获取一些结果用于提取建议
-    });
+    const searchResult = await this.searchVectorTopK(query.trim(), limit * 2);
 
     const suggestions = new Set<string>();
     const queryWords = query.toLowerCase().trim().split(/\s+/);
@@ -198,7 +186,7 @@ export class SubtitleSearchService {
     await this.ensureInitialized();
 
     // 尝试使用向量检索
-    if (this.useVector && this.vectorService && this.vectorService.isReady()) {
+    if (this.vectorService && this.vectorService.isReady()) {
       const top = await this.vectorService.searchTopK(query, 1);
       if (top.length > 0) {
         const byId = await this.getEntryById(top[0].entryId);
@@ -206,9 +194,9 @@ export class SubtitleSearchService {
       }
     }
 
-    // 回退到关键词检索
-    const keyword = await this.search({ query, limit: 1 });
-    if (keyword.results.length > 0) return keyword.results[0];
+    // 回退到向量检索
+    const fallback = await this.searchVectorTopK(query, 1);
+    if (fallback.results.length > 0) return fallback.results[0];
     return null;
   }
 
@@ -219,8 +207,12 @@ export class SubtitleSearchService {
     await this.ensureInitialized();
 
     if (!this.vectorService || !this.vectorService.isReady()) {
-      // 回退到关键词检索
-      return this.search({ query, limit });
+      // 向量服务未准备好，返回空结果
+      return {
+        results: [],
+        total: 0,
+        query,
+      };
     }
 
     const top = await this.vectorService.searchTopK(query, limit);

@@ -29,23 +29,17 @@ export async function GET(request: NextRequest) {
       options.videoIds = videoIds.split(',').map(id => id.trim());
     }
 
-    // 执行搜索（支持 strategy=vector|keyword，默认 keyword 保持兼容）
+    // 执行向量搜索
     const searchService = SubtitleSearchService.getInstance();
-
-    // 服务应该已在启动时初始化，直接使用
-
-    const strategy = (searchParams.get('strategy') || 'keyword').toLowerCase();
-    const results = strategy === 'vector'
-      ? await searchService.searchVectorTopK(options.query, options.limit ?? 20)
-      : await searchService.search(options);
+    const results = await searchService.searchVectorTopK(options.query, options.limit ?? 20);
 
     if (process.env.NODE_ENV !== 'production') {
-      const list = (results as any)?.results ?? [];
-      const scores = list.map((r: any) => r?.score ?? 0);
+      const list = results?.results ?? [];
+      const scores = list.map((r) => r?.score ?? 0);
       const max = scores.length ? Math.max(...scores) : null;
       const min = scores.length ? Math.min(...scores) : null;
       const avg = scores.length ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : null;
-      console.log('[api/search]', { strategy, q: options.query, got: list.length, min, max, avg });
+      console.log('[api/search]', { q: options.query, got: list.length, min, max, avg });
     }
 
     return NextResponse.json({
@@ -69,7 +63,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { query, options = {}, strategy = 'keyword' } = body;
+    const { query, options = {} } = body;
 
     if (!query) {
       return NextResponse.json(
@@ -86,12 +80,7 @@ export async function POST(request: NextRequest) {
     };
 
     const searchService = SubtitleSearchService.getInstance();
-
-    // 服务应该已在启动时初始化，直接使用
-
-    const results = String(strategy).toLowerCase() === 'vector'
-      ? await searchService.searchVectorTopK(searchOptions.query, searchOptions.limit ?? 20)
-      : await searchService.search(searchOptions);
+    const results = await searchService.searchVectorTopK(searchOptions.query, searchOptions.limit ?? 20);
 
     return NextResponse.json({
       success: true,

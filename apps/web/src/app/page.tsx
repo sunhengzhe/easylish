@@ -21,7 +21,7 @@ interface VideoData {
 // 日常生活中常见的中文表达
 const suggestions = [
   "求知若饥，虚心若愚",
-  "祝你好运",
+  "相信美好的事情即将发生"
 ];
 
 export default function Home() {
@@ -83,15 +83,15 @@ export default function Home() {
     setLoading(true);
     try {
       // 获取多个搜索结果
-      const response = await fetch(`/api/search?q=${encodeURIComponent(queryText)}&limit=10&strategy=vector`);
+      const response = await fetch(`/api/search?q=${encodeURIComponent(queryText)}&limit=10`);
 
       if (response.ok) {
         const data = await response.json();
         const results = data.data.results as ApiSearchResult[];
 
         // 过滤结果：基于分数的简单阈值，不再使用 confidence
-        // Only show items with score >= threshold (default 0.8)
-        const baseScore = Number(process.env.NEXT_PUBLIC_MIN_SCORE || 0.8);
+        // Only show items with score >= threshold (default 0.7)
+        const baseScore = Number(process.env.NEXT_PUBLIC_MIN_SCORE || 0.7);
         const highQualityResults = results.filter(r => (r.score ?? 0) >= baseScore);
 
         if (highQualityResults.length > 0) {
