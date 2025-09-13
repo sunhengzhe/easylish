@@ -92,3 +92,25 @@ export async function deleteByVideoIdPrefix(prefix: string) {
   if (!res.ok) return null;
   return await res.json();
 }
+
+export async function getRandomSubtitle(): Promise<{ entryId: string; score: number; payload?: Record<string, unknown> } | null> {
+  const res = await fetch(`${BASE}/random`);
+  if (!res.ok) {
+    const t = await res.text();
+    console.error(`vector-api random failed: ${res.status} ${t}`);
+    return null;
+  }
+  const data = await res.json();
+
+  // 检查是否有错误
+  if (data.error) {
+    console.error(`vector-api random error: ${data.error}`);
+    return null;
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[web] vector-api random', data);
+  }
+
+  return data;
+}

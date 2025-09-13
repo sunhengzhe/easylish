@@ -24,6 +24,26 @@ function deduplicateByVideo(results: SearchResult[]): SearchResult[] {
   return Array.from(videoMap.values()).sort((a, b) => b.score - a.score);
 }
 
+/**
+ * 过滤掉 normalizedText 中只有单个词的搜索结果
+ */
+function filterShortWords(results: SearchResult[]): SearchResult[] {
+  return results.filter(result => {
+    const normalizedText = result.entry.normalizedText || '';
+
+    // 移除标点符号和多余空格，然后按空格分割
+    const words = normalizedText
+      .replace(/[^\w\s\u4e00-\u9fff]/g, ' ') // 保留字母、数字、空格和中文字符
+      .replace(/\s+/g, ' ') // 将多个空格合并为一个
+      .trim()
+      .split(' ')
+      .filter(word => word.length > 0); // 移除空字符串
+
+    // 只保留有多个词的结果
+    return words.length > 2;
+  });
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -54,8 +74,11 @@ export async function GET(request: NextRequest) {
     const searchLimit = Math.max((options.limit ?? 20) * 3, 50); // 获取3倍数量确保去重后有足够结果
     const rawResults = await searchService.searchVectorTopK(options.query, searchLimit);
 
+    // 过滤掉只有单个词的结果
+    const filteredResults = filterShortWords(rawResults.results);
+
     // 对结果按视频去重
-    const deduplicatedResults = deduplicateByVideo(rawResults.results);
+    const deduplicatedResults = deduplicateByVideo(filteredResults);
 
     // 应用原始的 limit 限制
     const finalResults = deduplicatedResults.slice(0, options.limit ?? 20);
@@ -74,6 +97,7 @@ export async function GET(request: NextRequest) {
       console.log('[api/search]', {
         q: options.query,
         rawCount: rawResults.results.length,
+        filteredCount: filteredResults.length,
         dedupCount: deduplicatedResults.length,
         finalCount: finalResults.length,
         min, max, avg
@@ -123,8 +147,11 @@ export async function POST(request: NextRequest) {
     const searchLimit = Math.max((searchOptions.limit ?? 20) * 3, 50);
     const rawResults = await searchService.searchVectorTopK(searchOptions.query, searchLimit);
 
+    // 过滤掉只有单个词的结果
+    const filteredResults = filterShortWords(rawResults.results);
+
     // 对结果按视频去重
-    const deduplicatedResults = deduplicateByVideo(rawResults.results);
+    const deduplicatedResults = deduplicateByVideo(filteredResults);
 
     // 应用原始的 limit 限制
     const finalResults = deduplicatedResults.slice(0, searchOptions.limit ?? 20);

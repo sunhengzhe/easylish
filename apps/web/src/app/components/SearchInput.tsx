@@ -6,6 +6,7 @@ interface SearchInputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onKeyPress: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onSubmit: () => void;
+  onRandomSubmit?: () => void;
   loading: boolean;
   placeholder: string;
   suggestions: string[];
@@ -20,6 +21,7 @@ export default function SearchInput({
   onChange,
   onKeyPress,
   onSubmit,
+  onRandomSubmit,
   loading,
   placeholder,
   suggestions,
@@ -48,13 +50,25 @@ export default function SearchInput({
           />
         )}
       </div>
-      <button
-        onClick={onSubmit}
-        disabled={loading}
-        className="px-6 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-orange-400 focus:ring-offset-1 whitespace-nowrap text-base"
-      >
-        {loading ? '查找中...' : '查一查'}
-      </button>
+      <div className="flex gap-2">
+        {onRandomSubmit && (
+          <button
+            onClick={onRandomSubmit}
+            disabled={loading}
+            className="px-4 py-3 bg-gray-100 hover:bg-gray-200 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-gray-400 focus:ring-offset-1 text-base"
+            title="随机台词"
+          >
+            🎲
+          </button>
+        )}
+        <button
+          onClick={onSubmit}
+          disabled={loading}
+          className="flex-1 px-6 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-orange-400 focus:ring-offset-1 whitespace-nowrap text-base"
+        >
+          {loading ? '查找中...' : '查一查'}
+        </button>
+      </div>
     </div>
   );
 }

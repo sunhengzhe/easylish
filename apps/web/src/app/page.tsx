@@ -24,11 +24,9 @@ interface VideoData {
 const suggestions = [
   "求知若饥，虚心若愚",
   "Guess how much I love you",
-  "有一天，我看过四十四次日落",
+  "重要的东西用眼睛是看不见的",
   "The 24 solar terms",
-  "小猪佩奇",
   "相信美好的事情即将发生",
-  "小鸭子去游泳",
 ];
 
 export default function Home() {
@@ -97,6 +95,59 @@ export default function Home() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
+  };
+
+  const handleRandomSubtitle = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/random');
+
+      if (response.ok) {
+        const data = await response.json();
+        const result = data.data.result as ApiSearchResult;
+
+        // 设置搜索结果（只有一条随机结果）
+        setSearchResults([result]);
+        setCurrentIndex(0);
+
+        // 设置视频数据
+        const videoData = {
+          videoId: result.entry.videoId,
+          episode: result.entry.episodeNumber || 1,
+          startMs: result.entry.startTime,
+          text: result.entry.text,
+          score: result.score,
+          confidence: undefined,
+        };
+
+        console.log('🎲 随机台词:', {
+          videoId: videoData.videoId,
+          startTime: `${Math.floor(videoData.startMs / 1000)}秒`,
+          text: videoData.text,
+          score: videoData.score?.toFixed(2),
+        });
+
+        setVideoData(videoData);
+        setShowVideo(true);
+        setInputValue(''); // 清空输入框，因为这是随机结果
+
+        // 添加历史记录
+        window.history.pushState({ search: true }, '', window.location.pathname);
+      } else {
+        showToast({
+          type: 'warning',
+          message: '获取随机台词失败，稍后再试试～',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching random subtitle:', error);
+      showToast({
+        type: 'error',
+        message: '随机台词功能遇到问题，请稍后再试',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -278,6 +329,7 @@ export default function Home() {
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
                 onSubmit={handleSubmit}
+                onRandomSubmit={handleRandomSubtitle}
                 loading={loading}
                 placeholder=""
                 suggestions={suggestions}
@@ -318,6 +370,7 @@ export default function Home() {
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
                 onSubmit={handleSubmit}
+                onRandomSubmit={handleRandomSubtitle}
                 loading={loading}
                 placeholder=""
                 suggestions={suggestions}

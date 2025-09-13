@@ -23,5 +23,5 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e .
 
 ## 启动
-TEI_URL=http://localhost:8080 QDRANT_URL=http://localhost:6333 LIBRETRANSLATE_URL=http://localhost:5001 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+TEI_URL=http://localhost:8080 QDRANT_URL=http://localhost:6333 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```

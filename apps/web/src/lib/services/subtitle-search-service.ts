@@ -265,4 +265,70 @@ export class SubtitleSearchService {
     // 这里返回空数组占位，避免阻断构建
     return [];
   }
+
+  /**
+   * 获取真正的随机台词（从向量数据库中随机选择）
+   */
+  async getRandomSubtitle(): Promise<SearchResult | null> {
+    await this.ensureInitialized();
+
+    if (!this.vectorService || !this.vectorService.isReady()) {
+      console.warn('Vector service not ready for random subtitle');
+      return null;
+    }
+
+    try {
+      const { getRandomSubtitle } = await import('../vector/backend-remote');
+      const randomData = await getRandomSubtitle();
+
+      if (!randomData) {
+        return null;
+      }
+
+      // 构建 SearchResult，复用现有数据结构
+      let entry: SubtitleEntry | undefined;
+      const p = randomData.payload;
+
+      if (p && typeof p === 'object') {
+        // 从 vector-api payload 构建 entry
+        entry = {
+          id: randomData.entryId,
+          videoId: String(p.video_id ?? ''),
+          episodeNumber: Number(p.episode ?? 1),
+          sequenceNumber: Number(p.sequence ?? 0),
+          startTime: Number(p.start_ms ?? 0),
+          endTime: Number(p.end_ms ?? 0),
+          text: String(p.text ?? ''),
+          normalizedText: String(p.normalized_text ?? ''),
+          duration: Math.max(0, Number(p.end_ms ?? 0) - Number(p.start_ms ?? 0)),
+        };
+      }
+
+      if (!entry) {
+        console.warn('Could not construct entry from random data');
+        return null;
+      }
+
+      const result: SearchResult = {
+        entry,
+        score: randomData.score,
+        source: 'vector'
+      };
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[subtitle-search] random subtitle:', {
+          entryId: result.entry.id,
+          videoId: result.entry.videoId,
+          text: result.entry.text.substring(0, 50) + '...',
+          score: result.score
+        });
+      }
+
+      return result;
+
+    } catch (error) {
+      console.error('Error getting random subtitle:', error);
+      return null;
+    }
+  }
 }
