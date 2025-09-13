@@ -97,6 +97,10 @@ export default function Home() {
     setInputValue(e.target.value);
   };
 
+  const handleClearInput = () => {
+    setInputValue("");
+  };
+
   const handleRandomSubtitle = async () => {
     setLoading(true);
     try {
@@ -330,6 +334,7 @@ export default function Home() {
                 onKeyPress={handleKeyPress}
                 onSubmit={handleSubmit}
                 onRandomSubmit={handleRandomSubtitle}
+                onClear={handleClearInput}
                 loading={loading}
                 placeholder=""
                 suggestions={suggestions}
@@ -371,6 +376,7 @@ export default function Home() {
                 onKeyPress={handleKeyPress}
                 onSubmit={handleSubmit}
                 onRandomSubmit={handleRandomSubtitle}
+                onClear={handleClearInput}
                 loading={loading}
                 placeholder=""
                 suggestions={suggestions}
