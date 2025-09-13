@@ -47,7 +47,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
         <div className="absolute top-6 right-6 z-10">
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+            className="p-2 rounded-full transition-colors duration-200"
             aria-label="关闭"
           >
             <svg

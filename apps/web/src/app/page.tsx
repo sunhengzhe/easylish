@@ -28,7 +28,6 @@ const suggestions = [
   "The 24 solar terms",
   "小猪佩奇",
   "相信美好的事情即将发生",
-  "对的时间，对的地点",
   "小鸭子去游泳",
 ];
 
