@@ -24,11 +24,12 @@ interface VideoData {
 const suggestions = [
   "求知若饥，虚心若愚",
   "Guess how much I love you",
+  "有一天，我看过四十四次日落",
+  "The 24 solar terms",
+  "小猪佩奇",
   "相信美好的事情即将发生",
   "对的时间，对的地点",
-  "The 24 solar terms",
   "小鸭子去游泳",
-  "小猪佩奇"
 ];
 
 export default function Home() {

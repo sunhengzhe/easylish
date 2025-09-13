@@ -76,8 +76,19 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                   <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 dark:text-white">
                     关于
                   </h2>
-                  <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                    视频来源：Bilibili，如有侵权，请及时联系。
+                  <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto flex items-center justify-center">
+                    视频来源：
+                    <a
+                      href="https://www.bilibili.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-300 transition-colors duration-200 hover:underline"
+                    >
+                      <svg viewBox='0 0 24 24' width='1.2em' height='1.2em' xmlns='http://www.w3.org/2000/svg'>
+                        <path fill='currentColor' d='M7.172 2.757L10.414 6h3.171l3.243-3.242a1 1 0 1 1 1.415 1.415L16.414 6H18.5A3.5 3.5 0 0 1 22 9.5v8a3.5 3.5 0 0 1-3.5 3.5h-13A3.5 3.5 0 0 1 2 17.5v-8A3.5 3.5 0 0 1 5.5 6h2.085L5.757 4.171a1 1 0 0 1 1.415-1.415M18.5 8h-13a1.5 1.5 0 0 0-1.493 1.356L4 9.5v8a1.5 1.5 0 0 0 1.356 1.493L5.5 19h13a1.5 1.5 0 0 0 1.493-1.355L20 17.5v-8A1.5 1.5 0 0 0 18.5 8M8 11a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0v-2a1 1 0 0 1 1-1m8 0a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0v-2a1 1 0 0 1 1-1'/>
+                      </svg>
+                      Bilibili
+                    </a>
                   </p>
                 </div>
 
@@ -92,7 +103,7 @@ export default function AboutModal({ isOpen, onClose }: AboutModalProps) {
                       <img
                         src="/wechat.jpg"
                         alt="微信二维码"
-                        className="w-60 h-60 md:w-56 md:h-56 object-contain"
+                        className="w-60 md:w-56 md:h-56 object-contain"
                       />
                   </div>
                 </div>
