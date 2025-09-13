@@ -33,7 +33,7 @@ export async function upsertEntries(entries: SubtitleEntry[]): Promise<number> {
   return Number(data?.upserted || 0);
 }
 
-export async function search(query: string, topK: number): Promise<Array<{ entryId: string; score: number }>> {
+export async function search(query: string, topK: number): Promise<Array<{ entryId: string; score: number; payload?: Record<string, unknown> }>> {
   const res = await fetch(`${BASE}/query`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -43,7 +43,7 @@ export async function search(query: string, topK: number): Promise<Array<{ entry
     const t = await res.text();
     throw new Error(`vector-api query failed: ${res.status} ${t}`);
   }
-  const data = (await res.json()) as Array<{ entryId: string; score: number }>;
+  const data = (await res.json()) as Array<{ entryId: string; score: number; payload?: Record<string, unknown> }>;
   if (process.env.NODE_ENV !== 'production') {
     const scores = Array.isArray(data) ? data.map((d) => d?.score ?? 0) : [];
     const max = scores.length ? Math.max(...scores) : null;

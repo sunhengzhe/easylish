@@ -5,6 +5,8 @@ import type { SearchResult as ApiSearchResult } from "@/lib/types/subtitle";
 import VideoPlayer from "./components/VideoPlayer";
 import ResultNavigator from "./components/ResultNavigator";
 import SearchInput from "./components/SearchInput";
+import TopNavigation from "./components/TopNavigation";
+import AboutModal from "./components/AboutModal";
 import { useToast } from "./components/Toast";
 
 interface VideoData {
@@ -21,10 +23,10 @@ interface VideoData {
 // 日常生活中常见的中文表达
 const suggestions = [
   "求知若饥，虚心若愚",
+  "Guess how much I love you",
   "相信美好的事情即将发生",
   "对的时间，对的地点",
   "The 24 solar terms",
-  "Guess how much I love you",
   "小鸭子去游泳",
   "小猪佩奇"
 ];
@@ -39,16 +41,16 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [isResetting, setIsResetting] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
     setMounted(true);
 
-    // 监听 hash 变化
-    const handleHashChange = () => {
-      const hash = window.location.hash;
-      if (hash === '' || hash === '#') {
-        // 返回首页状态
+    // 监听 popstate 事件（浏览器前进后退）
+    const handlePopState = () => {
+      // 如果用户点击浏览器后退按钮，清除搜索状态
+      if (showVideo && window.location.pathname === '/') {
         setShowVideo(false);
         setVideoData(null);
         setSearchResults([]);
@@ -57,12 +59,9 @@ export default function Home() {
       }
     };
 
-    // 初始化时检查 hash
-    handleHashChange();
-
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showVideo]);
 
   // 循环切换提示词
   useEffect(() => {
@@ -88,11 +87,13 @@ export default function Home() {
     }
   }, [suggestionIndex]);
 
+  const handleAboutClick = () => {
+    setShowAboutModal(true);
+  };
 
-  // 返回首页
-  const goToHome = useCallback(() => {
-    window.location.hash = '';
-  }, []);
+  const handleAboutClose = () => {
+    setShowAboutModal(false);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
@@ -152,8 +153,8 @@ export default function Home() {
           setVideoData(videoData);
           setShowVideo(true);
 
-          // 设置 hash 表示进入搜索结果状态
-          window.location.hash = 'search';
+          // 添加历史记录，支持浏览器后退
+          window.history.pushState({ search: true }, '', window.location.pathname);
         } else {
           showToast({
             type: 'info',
@@ -236,32 +237,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
+      <TopNavigation currentPage="home" showLogo={showVideo} onAboutClick={handleAboutClick} />
+
       {showVideo && videoData ? (
-        // 视频播放模式：平衡布局，logo明显可见
-        <div className="min-h-screen flex flex-col">
-          {/* 顶部区域：Logo 和返回按钮 */}
-          <div className="flex justify-between items-center pt-6 pb-4 px-4 sm:px-6 md:px-8">
-            <button
-              onClick={goToHome}
-              className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors duration-200"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="text-sm">返回</span>
-            </button>
-
-            <img
-              src="/easylish-logo.png"
-              alt="Easylish Logo"
-              width={200}
-              height={80}
-              className="object-contain"
-              style={{ width: 'auto', height: 'auto', maxWidth: '200px', maxHeight: '80px' }}
-            />
-
-            <div className="w-16"></div> {/* 占位符保持居中 */}
-          </div>
+        // 视频播放模式
+        <div className="min-h-[calc(100vh-4rem)] flex flex-col">{/* 减去导航栏高度 */}
 
           {/* 主要视频区域：适中尺寸，不占满屏幕 */}
           <div className="flex-1 flex items-start justify-center px-4 sm:px-6 md:px-8 pt-4 pb-8">
@@ -310,9 +290,9 @@ export default function Home() {
         </div>
       ) : (
         // 初始状态：居中的搜索界面
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
+        <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">{/* 减去导航栏高度 */}
           <div className="w-full max-w-2xl mx-auto text-center">
-            {/* Logo */}
+            {/* Logo - 在首页状态下显示大尺寸 */}
             <div className="mb-2">
               <img
                 src="/easylish-logo.png"
@@ -349,6 +329,9 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* About Modal */}
+      <AboutModal isOpen={showAboutModal} onClose={handleAboutClose} />
     </div>
   );
 }

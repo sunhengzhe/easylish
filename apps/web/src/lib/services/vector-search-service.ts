@@ -26,7 +26,7 @@ export class VectorSearchService {
     await this.initialize(videoSubtitles);
   }
 
-  async searchTopK(query: string, topK = 1): Promise<Array<{ entryId: string; score: number }>> {
+  async searchTopK(query: string, topK = 1): Promise<Array<{ entryId: string; score: number; payload?: Record<string, unknown> }>> {
     if (!this.initialized) return [];
     return await Remote.search(query.toLowerCase(), topK);
   }
