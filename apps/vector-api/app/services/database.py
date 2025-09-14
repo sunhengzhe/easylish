@@ -92,7 +92,8 @@ class QdrantService:
         self,
         limit: int = 100,
         offset: Any = None,
-        collection_name: str = None
+        collection_name: str = None,
+        with_vectors: bool = False
     ) -> tuple[List[Any], Any]:
         """滚动获取集合数据"""
         client = self.get_client()
@@ -103,6 +104,7 @@ class QdrantService:
         scroll_result, next_page_token = await client.scroll(
             collection_name=collection_name,
             with_payload=True,
+            with_vectors=with_vectors,
             limit=limit,
             offset=offset,
         )

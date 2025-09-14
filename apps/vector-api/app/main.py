@@ -242,7 +242,8 @@ async def _delete_by_prefix(collection_name: str, prefix: str) -> int:
         scroll_result, next_page_token = await qdrant_service.scroll_collection(
             limit=1024,
             offset=next_page_token,
-            collection_name=collection_name
+            collection_name=collection_name,
+            with_vectors=False  # 删除操作不需要向量数据
         )
 
         # 筛选匹配前缀的点
